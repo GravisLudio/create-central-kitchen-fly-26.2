@@ -18,7 +18,7 @@
 
 package plus.dragons.createcentralkitchen.config;
 
-import net.createmod.catnip.config.ConfigBase;
+import com.zurrtum.create.catnip.config.ConfigBase;
 
 public class CCKCommonConfig extends ConfigBase {
     public final CCKRecipesConfig recipes = nested(1, CCKRecipesConfig::new, Comments.recipes);

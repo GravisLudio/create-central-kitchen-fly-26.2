@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "create_central_kitchen_gametest",
+  "version": "1.0.0",
+  "name": "Create: Central Kitchen game tests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "plus.dragons.createcentralkitchen.gametest.CoreTests"
+    ]
+  },
+  "depends": {
+    "create_central_kitchen": "*",
+    "fabric-gametest-api-v1": "*"
+  }
+}

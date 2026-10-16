@@ -18,11 +18,11 @@
 
 package plus.dragons.createcentralkitchen.integration;
 
-import com.mojang.logging.LogUtils;
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
-import org.slf4j.Logger;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.fabric.api.resource.conditions.v1.ResourceCondition;
+import net.fabricmc.fabric.api.resource.conditions.v1.ResourceConditions;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.resources.Identifier;
 
 public enum ModIntegration {
     FARMERSDELIGHT(Mods.FARMERSDELIGHT),
@@ -39,7 +39,6 @@ public enum ModIntegration {
     FESTIVEDELIGHT(Mods.FESTIVEDELIGHT),
     HEARTHANDHARVEST(Mods.HEARTHANDHARVEST),;
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     private final String id;
 
     ModIntegration(String id) {
@@ -51,17 +50,25 @@ public enum ModIntegration {
     }
 
     public boolean enabled() {
-        return ModList.get().isLoaded(id);
+        return FabricLoader.getInstance().isModLoaded(id);
     }
 
-    public ResourceLocation asResource(String path) {
-        return ResourceLocation.fromNamespaceAndPath(id, path);
+    public Identifier asResource(String path) {
+        return Identifier.fromNamespaceAndPath(id, path);
     }
 
-    public ModLoadedCondition condition() {
-        return new ModLoadedCondition(id);
+    public ResourceCondition condition() {
+        return ResourceConditions.allModsLoaded(id);
     }
 
+    public static boolean isClient() {
+        return FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT;
+    }
+
+    /**
+     * Mod ids of the Fabric builds. The ids of the Fabric ports may differ from the NeoForge ones; they were not
+     * re-checked except Farmer's Delight Refabricated ({@code farmersdelight}).
+     */
     public static class Mods {
         public static final String FARMERSDELIGHT = "farmersdelight";
         public static final String BREWINANDCHEWIN = "brewinandchewin";

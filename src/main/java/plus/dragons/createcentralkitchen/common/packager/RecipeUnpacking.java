@@ -18,15 +18,15 @@
 
 package plus.dragons.createcentralkitchen.common.packager;
 
-import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
+import com.zurrtum.create.infrastructure.component.PackageOrderWithCrafts;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
+import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
-import net.neoforged.neoforge.items.IItemHandler;
 import org.jetbrains.annotations.Nullable;
 
 /** Plans complete, balanced recipes without changing either inventory or package. */
@@ -34,7 +34,7 @@ final class RecipeUnpacking {
     private RecipeUnpacking() {}
 
     interface Device {
-        IItemHandler inventory();
+        Container inventory();
 
         int slotStart();
 
@@ -48,13 +48,13 @@ final class RecipeUnpacking {
     record Candidate(Recipe<?> recipe, List<Ingredient> ingredients) {
         Candidate(Recipe<?> recipe) {
             // Keg recipes can contain empty placeholders for unused input slots.
-            this(recipe, recipe.getIngredients().stream().filter(ingredient -> !ingredient.isEmpty()).toList());
+            this(recipe, recipe.placementInfo().ingredients().stream().filter(ingredient -> !ingredient.isEmpty()).toList());
         }
     }
 
     static @Nullable Plan plan(Device device, List<ItemStack> items, @Nullable PackageOrderWithCrafts context) {
         if (device.slotCount() < 1 || device.slotCount() > 9
-                || device.slotStart() < 0 || device.slotStart() + device.slotCount() > device.inventory().getSlots())
+                || device.slotStart() < 0 || device.slotStart() + device.slotCount() > device.inventory().getContainerSize())
             return null;
         var contents = aggregate(items);
         long total = contents.stream().mapToLong(ItemStack::getCount).sum();
@@ -66,7 +66,7 @@ final class RecipeUnpacking {
         var existing = new ArrayList<ItemStack>();
         int storedServings = 0;
         for (int slot = 0; slot < device.slotCount(); slot++) {
-            var stack = device.inventory().getStackInSlot(device.slotStart() + slot).copy();
+            var stack = device.inventory().getItem(device.slotStart() + slot).copy();
             before.add(stack);
             if (stack.isEmpty())
                 continue;
@@ -235,26 +235,32 @@ final class RecipeUnpacking {
             this.additions = additions.stream().map(ItemStack::copy).toList();
         }
 
-        boolean apply(IItemHandler inventory, boolean simulate) {
+        boolean apply(Container inventory, boolean simulate) {
             for (int i = 0; i < before.size(); i++) {
-                var existing = inventory.getStackInSlot(start + i);
+                var existing = inventory.getItem(start + i);
                 var addition = additions.get(i);
                 if (!ItemStack.matches(existing, before.get(i)))
                     return false;
                 if (addition.isEmpty())
                     continue;
-                int limit = Math.min(inventory.getSlotLimit(start + i), addition.getMaxStackSize());
+                int limit = inventory.getMaxStackSize(addition);
                 if ((!existing.isEmpty() && !ItemStack.isSameItemSameComponents(existing, addition))
                         || (long) existing.getCount() + addition.getCount() > limit
-                        || !inventory.isItemValid(start + i, addition)
-                        || !inventory.insertItem(start + i, addition.copy(), true).isEmpty())
+                        || !inventory.canPlaceItem(start + i, addition))
                     return false;
             }
             if (!simulate) {
                 for (int i = 0; i < additions.size(); i++) {
-                    if (!additions.get(i).isEmpty())
-                        inventory.insertItem(start + i, additions.get(i).copy(), false);
+                    var addition = additions.get(i);
+                    if (addition.isEmpty())
+                        continue;
+                    var existing = inventory.getItem(start + i);
+                    if (existing.isEmpty())
+                        inventory.setItem(start + i, addition.copy());
+                    else
+                        inventory.setItem(start + i, existing.copyWithCount(existing.getCount() + addition.getCount()));
                 }
+                inventory.setChanged();
             }
             return true;
         }

@@ -18,27 +18,19 @@
 
 package plus.dragons.createcentralkitchen.common.registry;
 
-import com.simibubi.create.api.registry.CreateRegistries;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
-import java.util.function.Supplier;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredRegister;
+import com.zurrtum.create.api.registry.CreateRegistries;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
+import net.minecraft.core.Registry;
 import plus.dragons.createcentralkitchen.common.CCKCommon;
 
-public class CCKArmInteractionPointTypes {
-    private static final DeferredRegister<ArmInteractionPointType> REGISTER = DeferredRegister
-            .create(CreateRegistries.ARM_INTERACTION_POINT_TYPE, CCKCommon.ID);
+/**
+ * Registers mechanical-arm interaction point types in Create-Fly's registry under this mod's namespace.
+ * Create-Fly registers its own types by calling {@link Registry#register} directly, so no deferred register is needed.
+ */
+public final class CCKArmInteractionPointTypes {
+    private CCKArmInteractionPointTypes() {}
 
-    public static void register(IEventBus modBus) {
-        REGISTER.register(modBus);
-    }
-
-    public static void register(DeferredHolder<ArmInteractionPointType, ArmInteractionPointType> holder, Supplier<? extends ArmInteractionPointType> supplier) {
-        REGISTER.register(holder.getId().getPath(), supplier);
-    }
-
-    public static DeferredHolder<ArmInteractionPointType, ArmInteractionPointType> holder(String name) {
-        return DeferredHolder.create(CreateRegistries.ARM_INTERACTION_POINT_TYPE, CCKCommon.asResource(name));
+    public static <T extends ArmInteractionPointType> T register(String name, T type) {
+        return Registry.register(CreateRegistries.ARM_INTERACTION_POINT_TYPE, CCKCommon.asResource(name), type);
     }
 }

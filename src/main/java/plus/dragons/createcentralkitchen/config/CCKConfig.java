@@ -18,60 +18,40 @@
 
 package plus.dragons.createcentralkitchen.config;
 
-import net.minecraft.Util;
-import net.minecraft.util.Unit;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.config.ModConfig.Type;
-import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.neoforge.common.ModConfigSpec;
+import com.zurrtum.create.catnip.config.Builder;
+import plus.dragons.createcentralkitchen.common.CCKCommon;
 import plus.dragons.createdragonsplus.util.FieldsNullabilityUnknownByDefault;
 
+/**
+ * Configuration lives in {@code config/create_central_kitchen/common.json} and {@code client.json}
+ * (Create-Fly's JSON config; the NeoForge TOML files are not read).
+ */
 @FieldsNullabilityUnknownByDefault
-public class CCKConfig {
-    private static final CCKCommonConfig COMMON_CONFIG = new CCKCommonConfig();
-    private static final CCKClientConfig CLIENT_CONFIG = new CCKClientConfig();
-    private static ModConfigSpec COMMON_SPEC;
-    private static ModConfigSpec CLIENT_SPEC;
+public final class CCKConfig {
+    private static volatile CCKCommonConfig common;
+    private static volatile CCKClientConfig client;
 
-    public CCKConfig(ModContainer modContainer) {
-        COMMON_SPEC = Util.make(new ModConfigSpec.Builder().configure(builder -> {
-            COMMON_CONFIG.registerAll(builder);
-            return Unit.INSTANCE;
-        }).getValue(), spec -> modContainer.registerConfig(Type.COMMON, spec));
-        CLIENT_SPEC = Util.make(new ModConfigSpec.Builder().configure(builder -> {
-            CLIENT_CONFIG.registerAll(builder);
-            return Unit.INSTANCE;
-        }).getValue(), spec -> modContainer.registerConfig(Type.CLIENT, spec));
+    private CCKConfig() {}
+
+    public static synchronized void registerCommon() {
+        if (common == null)
+            common = Builder.create(CCKCommonConfig::new, CCKCommon.ID, "common");
+    }
+
+    public static synchronized void registerClient() {
+        if (client == null)
+            client = Builder.create(CCKClientConfig::new, CCKCommon.ID, "client");
     }
 
     public static CCKCommonConfig common() {
-        return COMMON_CONFIG;
+        return common;
     }
 
     public static CCKClientConfig client() {
-        return CLIENT_CONFIG;
+        return client;
     }
 
     public static CCKRecipesConfig recipes() {
-        return COMMON_CONFIG.recipes;
-    }
-
-    @SubscribeEvent
-    public void onLoad(ModConfigEvent.Loading event) {
-        var spec = event.getConfig().getSpec();
-        if (spec == COMMON_SPEC)
-            COMMON_CONFIG.onLoad();
-        else if (spec == CLIENT_SPEC)
-            CLIENT_CONFIG.onLoad();
-    }
-
-    @SubscribeEvent
-    public void onReload(ModConfigEvent.Reloading event) {
-        var spec = event.getConfig().getSpec();
-        if (spec == COMMON_SPEC)
-            COMMON_CONFIG.onReload();
-        else if (spec == CLIENT_SPEC)
-            CLIENT_CONFIG.onReload();
+        return common.recipes;
     }
 }

@@ -56,8 +56,20 @@ def hasIntegration = { name ->
     enabledIntegrationSourceSets.contains(name)
 }
 
+// Pendiente de portar a Fabric (F1c/F2): se quedan en su sitio, fuera de la compilacion, y se van quitando de esta lista
+// a medida que se portan. Ver LEEME.md de la carpeta del port.
+def notPortedYet = [
+        'plus/dragons/createcentralkitchen/client/**',                // CCKClient, blaze burner, Ponder, sprites
+        'plus/dragons/createcentralkitchen/mixin/create/client/**',   // mixins de cliente (burner, deployer)
+        'plus/dragons/createcentralkitchen/integration/jei/**',       // plugin de JEI
+        'plus/dragons/createcentralkitchen/common/gametest/**',       // GameTests de NeoForge
+        'plus/dragons/createcentralkitchen/data/CCKLang.java',        // LangBuilder es solo de cliente en Create Fly
+        'plus/dragons/createcentralkitchen/mixin/UniversalConditionalMixinPlugin.java' // conditional-mixin no existe en Fabric
+]
+
 sourceSets {
     main {
+        java.exclude notPortedYet
         resources.srcDir 'src/generated/resources'
     }
     enabledIntegrationSourceSets.each { name ->
@@ -76,6 +88,15 @@ sourceSets {
     }
     main {
         enabledIntegrationSourceSets.each { name ->
+            runtimeClasspath += sourceSets[name].output
+        }
+    }
+    // Pruebas de servidor (`gradlew runGametest`): viven aparte para que no entren en el jar.
+    gametest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+        enabledIntegrationSourceSets.each { name ->
+            compileClasspath += sourceSets[name].output
             runtimeClasspath += sourceSets[name].output
         }
     }
@@ -118,6 +139,22 @@ loom {
             enabledIntegrationSourceSets.each { name ->
                 sourceSet sourceSets[name]
             }
+        }
+        "${mod_id}_gametest" {
+            sourceSet sourceSets.gametest
+        }
+    }
+
+    // `gradlew runGametest`: servidor sin ventana que ejecuta todos los @GameTest de src/gametest y sale;
+    // resultados en build/gametest/report.xml.
+    runs {
+        gametest {
+            server()
+            name 'Game Test'
+            source sourceSets.gametest
+            vmArg '-Dfabric-api.gametest'
+            vmArg "-Dfabric-api.gametest.report-file=${project.file('build/gametest/report.xml')}"
+            runDir 'build/gametest'
         }
     }
 }
@@ -186,6 +223,9 @@ dependencies {
         farmersdelightCompileOnly("maven.modrinth:farmers-delight-refabricated:${farmers_delight_version}") { transitive = false }
         runtimeOnly("maven.modrinth:farmers-delight-refabricated:${farmers_delight_version}") { transitive = false }
     }
+
+    // No forma parte del bundle fabric-api: es un modulo solo de desarrollo.
+    gametestImplementation fabricApi.module("fabric-gametest-api-v1", fabric_api_version)
 
     testImplementation platform("org.junit:junit-bom:${junit_version}")
     testImplementation 'org.junit.jupiter:junit-jupiter'

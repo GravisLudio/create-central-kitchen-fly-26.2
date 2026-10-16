@@ -18,7 +18,7 @@
 
 package plus.dragons.createcentralkitchen.config;
 
-import net.createmod.catnip.config.ConfigBase;
+import com.zurrtum.create.catnip.config.ConfigBase;
 
 public class CCKRecipesConfig extends ConfigBase {
     public final ConfigBool addTreeBarkToStripSawingRecipes = b(true,

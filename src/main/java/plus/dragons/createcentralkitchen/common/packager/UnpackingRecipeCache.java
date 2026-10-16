@@ -23,51 +23,35 @@ import com.google.common.cache.CacheBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraft.world.item.crafting.Recipe;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
-import net.neoforged.neoforge.event.TagsUpdatedEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import plus.dragons.createcentralkitchen.common.CCKCommon;
+import plus.dragons.createdragonsplus.common.recipe.UpdateRecipesEvent;
 
-@EventBusSubscriber(modid = CCKCommon.ID)
 public final class UnpackingRecipeCache {
     private static final Cache<RecipeManager, Map<RecipeType<?>, List<RecipeUnpacking.Candidate>>> RECIPES = CacheBuilder.newBuilder().weakKeys().build();
 
     private UnpackingRecipeCache() {}
+
+    /**
+     * Drops the cache whenever recipes or tags change. {@link UpdateRecipesEvent} fires on the logical
+     * server after a data-pack reload, once static tags have been rebound.
+     */
+    public static void register() {
+        UpdateRecipesEvent.EVENT.register(event -> RECIPES.invalidateAll());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> RECIPES.invalidateAll());
+    }
 
     static List<RecipeUnpacking.Candidate> get(RecipeManager manager, RecipeType<?> type) {
         return RECIPES.asMap().computeIfAbsent(manager, ignored -> new ConcurrentHashMap<>())
                 .computeIfAbsent(type, key -> load(manager, key));
     }
 
-    @SuppressWarnings("unchecked")
     private static List<RecipeUnpacking.Candidate> load(RecipeManager manager, RecipeType<?> type) {
-        // The manager associates each type with its matching input and recipe classes.
-        return manager.getAllRecipesFor((RecipeType<Recipe<RecipeInput>>) type).stream().map(RecipeHolder::value)
+        return manager.getRecipes().stream().map(RecipeHolder::value)
+                .filter(recipe -> recipe.getType() == type)
                 .map(RecipeUnpacking.Candidate::new)
                 .filter(candidate -> !candidate.ingredients().isEmpty() && candidate.ingredients().size() <= 9).toList();
-    }
-
-    @SubscribeEvent
-    public static void reload(AddReloadListenerEvent event) {
-        event.addListener((ResourceManagerReloadListener) resources -> RECIPES.invalidateAll());
-    }
-
-    @SubscribeEvent
-    public static void tagsUpdated(TagsUpdatedEvent event) {
-        if (event.shouldUpdateStaticData())
-            RECIPES.invalidateAll();
-    }
-
-    @SubscribeEvent
-    public static void serverStopped(ServerStoppedEvent event) {
-        RECIPES.invalidateAll();
     }
 }

@@ -20,25 +20,31 @@ package plus.dragons.createcentralkitchen.mixin.create;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.simibubi.create.content.kinetics.belt.BeltHelper;
-import net.minecraft.world.food.FoodProperties;
+import com.zurrtum.create.content.kinetics.belt.BeltHelper;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 
+/**
+ * Items that leave a remainder (a bowl, a bottle...) are carried upright on belts when their remainder is.
+ * Wraps the cached computation inside {@code BeltHelper.isItemUpright}, so the result is still cached per item.
+ */
 @Mixin(value = BeltHelper.class, priority = 2000)
 public abstract class BeltHelperMixin {
-    @WrapMethod(method = "lambda$isItemUpright$1")
+    @WrapMethod(method = "lambda$isItemUpright$0")
     private static Boolean isItemUprightForRemainder(ItemStack stack, Item item, Operation<Boolean> original) {
         if (original.call(stack, item))
             return true;
-        ItemStack remainder;
-        remainder = stack.getCraftingRemainingItem();
-        if (!remainder.isEmpty())
-            return original.call(remainder, remainder.getItem());
-        FoodProperties food = stack.getFoodProperties(null);
-        if (food != null && food.usingConvertsTo().isPresent()) {
-            remainder = food.usingConvertsTo().get();
+        var craftingRemainder = stack.getItem().getCraftingRemainder();
+        if (craftingRemainder != null) {
+            var remainder = craftingRemainder.create();
+            if (!remainder.isEmpty())
+                return original.call(remainder, remainder.getItem());
+        }
+        var useRemainder = stack.get(DataComponents.USE_REMAINDER);
+        if (useRemainder != null) {
+            var remainder = useRemainder.convertInto().create();
             return !remainder.isEmpty() && original.call(remainder, remainder.getItem());
         }
         return false;
