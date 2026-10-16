@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "create_central_kitchen",
+  "version": "${version}",
+  "name": "Create: Central Kitchen",
+  "description": "Integrated cooking automation for Create",
+  "authors": [
+    "DragonsPlus"
+  ],
+  "contact": {
+    "homepage": "https://modrinth.com/mod/create-central-kitchen",
+    "sources": "https://github.com/DragonsPlusMinecraft/CreateCentralKitchen",
+    "issues": "https://github.com/DragonsPlusMinecraft/CreateCentralKitchen/issues"
+  },
+  "license": "LGPL-3.0-or-later",
+  "icon": "icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "plus.dragons.createcentralkitchen.common.CCKCommon"
+    ],
+    "client": [
+      "plus.dragons.createcentralkitchen.client.CCKClient"
+    ],
+    "jei_mod_plugin": [
+      "plus.dragons.createcentralkitchen.integration.jei.CCKJeiPlugin"
+    ]
+  },
+  "mixins": [
+    "create_central_kitchen.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": ">=${fabric_api_version}",
+    "minecraft": "${minecraft_version_range}",
+    "java": ">=25",
+    "create": "${create_version_range}",
+    "create_dragons_plus": "${create_dragons_plus_version_range}"
+  },
+  "suggests": {
+    "jei": "${jei_version}",
+    "farmersdelight": "*"
+  }
+}
