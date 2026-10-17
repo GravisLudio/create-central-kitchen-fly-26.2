@@ -18,34 +18,16 @@
 
 package plus.dragons.createcentralkitchen.client;
 
-import static plus.dragons.createcentralkitchen.common.CCKCommon.REGISTRATE;
+import net.fabricmc.api.ClientModInitializer;
+import plus.dragons.createcentralkitchen.config.CCKConfig;
 
-import net.createmod.ponder.foundation.PonderIndex;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.data.loading.DatagenModLoader;
-import plus.dragons.createcentralkitchen.client.ponder.CCKPonderPlugin;
-import plus.dragons.createcentralkitchen.client.registry.CCKPartialModels;
-import plus.dragons.createcentralkitchen.client.registry.CCKSpriteShifts;
-import plus.dragons.createcentralkitchen.common.CCKCommon;
-import plus.dragons.createcentralkitchen.data.CCKLang;
-
-@Mod(value = CCKCommon.ID, dist = Dist.CLIENT)
-public class CCKClient {
-    public CCKClient(IEventBus modBus, ModContainer modContainer) {
-        modBus.addListener(CCKClient::clientInit);
-        CCKLang.register();
-        if (DatagenModLoader.isRunningDataGen()) {
-            REGISTRATE.registerPonderLocalization(CCKPonderPlugin::new);
-        }
-    }
-
-    public static void clientInit(final FMLClientSetupEvent event) {
-        CCKPartialModels.register();
-        CCKSpriteShifts.register();
-        PonderIndex.addPlugin(new CCKPonderPlugin());
+/**
+ * Client entrypoint. For now it only loads the client config: the blaze burner heads, Ponder scenes and JEI plugin
+ * of the NeoForge build are still to be ported.
+ */
+public class CCKClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        CCKConfig.registerClient();
     }
 }

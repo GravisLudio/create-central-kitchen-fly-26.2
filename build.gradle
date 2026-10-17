@@ -59,7 +59,9 @@ def hasIntegration = { name ->
 // Pendiente de portar a Fabric (F1c/F2): se quedan en su sitio, fuera de la compilacion, y se van quitando de esta lista
 // a medida que se portan. Ver LEEME.md de la carpeta del port.
 def notPortedYet = [
-        'plus/dragons/createcentralkitchen/client/**',                // CCKClient, blaze burner, Ponder, sprites
+        'plus/dragons/createcentralkitchen/client/burner/**',         // cabezas del blaze burner
+        'plus/dragons/createcentralkitchen/client/ponder/**',
+        'plus/dragons/createcentralkitchen/client/registry/**',       // modelos parciales y sprites
         'plus/dragons/createcentralkitchen/mixin/create/client/**',   // mixins de cliente (burner, deployer)
         'plus/dragons/createcentralkitchen/integration/jei/**',       // plugin de JEI
         'plus/dragons/createcentralkitchen/common/gametest/**',       // GameTests de NeoForge

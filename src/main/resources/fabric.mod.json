@@ -21,9 +21,6 @@
     ],
     "client": [
       "plus.dragons.createcentralkitchen.client.CCKClient"
-    ],
-    "jei_mod_plugin": [
-      "plus.dragons.createcentralkitchen.integration.jei.CCKJeiPlugin"
     ]
   },
   "mixins": [
