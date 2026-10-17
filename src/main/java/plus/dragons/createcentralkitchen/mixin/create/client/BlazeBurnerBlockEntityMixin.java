@@ -18,26 +18,24 @@
 
 package plus.dragons.createcentralkitchen.mixin.create.client;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.sugar.Local;
-import com.simibubi.create.content.processing.burner.BlazeBurnerBlockEntity;
-import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.zurrtum.create.content.processing.burner.BlazeBurnerBlockEntity;
+import com.zurrtum.create.foundation.blockEntity.SmartBlockEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerClientExtension;
 import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerRenderOverride;
 
+/** Gives every blaze burner a place to keep its current render override, and lets the override fake the block above. */
 @Mixin(BlazeBurnerBlockEntity.class)
 public abstract class BlazeBurnerBlockEntityMixin extends SmartBlockEntity implements BlazeBurnerClientExtension {
     @Unique
-    private @Nullable BlazeBurnerRenderOverride renderOverride;
+    private @Nullable BlazeBurnerRenderOverride createCentralKitchen$renderOverride;
 
     protected BlazeBurnerBlockEntityMixin(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -46,31 +44,17 @@ public abstract class BlazeBurnerBlockEntityMixin extends SmartBlockEntity imple
     @Nullable
     @Override
     public BlazeBurnerRenderOverride getRenderOverride() {
-        return renderOverride;
+        return createCentralKitchen$renderOverride;
     }
 
     @Override
     public void setRenderOverride(@Nullable BlazeBurnerRenderOverride renderOverride) {
-        this.renderOverride = renderOverride;
+        this.createCentralKitchen$renderOverride = renderOverride;
     }
 
-    @ModifyExpressionValue(method = "tickAnimation", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/processing/burner/BlazeBurnerBlockEntity;isValidBlockAbove()Z"))
-    private boolean tickAnimation$modifyIsValidBlockAbove(boolean original) {
-        return renderOverride == null ? original : renderOverride.isValidBlockAbove(original);
-    }
-
-    @ModifyArg(method = "spawnParticles", at = @At(value = "INVOKE", ordinal = 1, target = "Lnet/minecraft/world/level/Level;addParticle(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V"))
-    private ParticleOptions spawnParticles$modifySoulFlame(ParticleOptions original) {
-        return renderOverride == null ? original : renderOverride.getFlameParticle(true);
-    }
-
-    @ModifyArg(method = "spawnParticles", at = @At(value = "INVOKE", ordinal = 2, target = "Lnet/minecraft/world/level/Level;addParticle(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V"))
-    private ParticleOptions spawnParticles$modifyFlame(ParticleOptions original) {
-        return renderOverride == null ? original : renderOverride.getFlameParticle(false);
-    }
-
-    @ModifyArg(method = "spawnParticleBurst", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;addParticle(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V"))
-    private ParticleOptions spawnParticleBurst$modify(ParticleOptions original, @Local(argsOnly = true) boolean superHeated) {
-        return renderOverride == null ? original : renderOverride.getFlameParticle(superHeated);
+    @ModifyReturnValue(method = "isValidBlockAbove", at = @At("RETURN"))
+    private boolean createCentralKitchen$overrideValidBlockAbove(boolean original) {
+        var override = createCentralKitchen$renderOverride;
+        return override == null ? original : override.isValidBlockAbove(original);
     }
 }

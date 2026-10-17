@@ -18,37 +18,41 @@
 
 package plus.dragons.createcentralkitchen.mixin.create.client;
 
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.simibubi.create.content.processing.burner.BlazeBurnerBlock.HeatLevel;
-import com.simibubi.create.content.processing.burner.BlazeBurnerBlockEntity;
-import com.simibubi.create.content.processing.burner.BlazeBurnerRenderer;
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
-import javax.annotation.Nullable;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
+import com.zurrtum.create.client.content.processing.burner.BlazeBurnerRenderer;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
+import com.zurrtum.create.content.processing.burner.BlazeBurnerBlockEntity;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerClientExtension;
+import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerRenderOverride;
+import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerRenderOverrides;
 
 @Mixin(BlazeBurnerRenderer.class)
 public class BlazeBurnerRendererMixin {
-    @WrapOperation(method = "renderSafe(Lcom/simibubi/create/content/processing/burner/BlazeBurnerBlockEntity;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;II)V", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/processing/burner/BlazeBurnerRenderer;renderShared(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/block/state/BlockState;Lcom/simibubi/create/content/processing/burner/BlazeBurnerBlock$HeatLevel;FFZZLdev/engine_room/flywheel/lib/model/baked/PartialModel;I)V"))
-    private void renderSafe$overrideRender(PoseStack ms, @Nullable PoseStack modelTransform, MultiBufferSource bufferSource,
-            Level level, BlockState blockState, HeatLevel heatLevel, float animation, float horizontalAngle,
-            boolean canDrawFlame, boolean drawGoggles, PartialModel drawHat, int hashCode,
-            Operation<Void> original, @Local(argsOnly = true) BlazeBurnerBlockEntity burner) {
-        var renderOverride = ((BlazeBurnerClientExtension) burner).getRenderOverride();
-        if (renderOverride == null)
-            original.call(ms, modelTransform, bufferSource,
-                    level, blockState, heatLevel, animation, horizontalAngle,
-                    canDrawFlame, drawGoggles, drawHat, hashCode);
-        else
-            renderOverride.render(ms, modelTransform, bufferSource,
-                    level, blockState, heatLevel, animation, horizontalAngle,
-                    canDrawFlame, drawGoggles, drawHat, hashCode);
+    /** Picks the override before the animation reads {@code isValidBlockAbove()}. */
+    @Inject(method = "tickAnimation", at = @At("HEAD"))
+    private static void createCentralKitchen$updateOverride(BlazeBurnerBlockEntity burner, CallbackInfo ci) {
+        BlazeBurnerRenderOverrides.update(burner);
+    }
+
+    /**
+     * The hat Create draws on its own (train hat, logistics hat) wins; otherwise the override's hat is used. The
+     * renderer already scales a hat down on the small inert head, so it always gets the full-size model.
+     */
+    @ModifyVariable(method = "extractRenderState(Lcom/zurrtum/create/content/processing/burner/BlazeBurnerBlockEntity;Lcom/zurrtum/create/client/content/processing/burner/BlazeBurnerRenderer$BlazeBurnerRenderState;FLnet/minecraft/world/phys/Vec3;Lnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;)V", at = @At("STORE"), name = "drawHat")
+    private @Nullable PartialModel createCentralKitchen$overrideHat(
+            @Nullable PartialModel drawHat, @Local(argsOnly = true) BlazeBurnerBlockEntity burner) {
+        if (drawHat != null)
+            return drawHat;
+        BlazeBurnerRenderOverride override = ((BlazeBurnerClientExtension) burner).getRenderOverride();
+        if (override == null)
+            return null;
+        PartialModel hat = override.getHatModel(false);
+        return BlazeBurnerRenderOverride.isModelLoaded(hat) ? hat : null;
     }
 }

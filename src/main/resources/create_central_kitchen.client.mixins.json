@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "priority": 1000,
+  "package": "plus.dragons.createcentralkitchen.mixin.create.client",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "BlazeBurnerBlockEntityMixin",
+    "BlazeBurnerRendererMixin",
+    "BlazeBurnerVisualMixin",
+    "DeployerItemRenderStateMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "minVersion": "0.8"
+}

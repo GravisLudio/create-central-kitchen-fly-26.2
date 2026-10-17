@@ -18,16 +18,39 @@
 
 package plus.dragons.createcentralkitchen.client;
 
+import com.zurrtum.create.client.ponder.foundation.PonderIndex;
+import java.util.Map;
 import net.fabricmc.api.ClientModInitializer;
+import plus.dragons.createcentralkitchen.client.ponder.CCKPonderPlugin;
+import plus.dragons.createcentralkitchen.client.registry.CCKPartialModels;
+import plus.dragons.createcentralkitchen.common.CCKCommon;
 import plus.dragons.createcentralkitchen.config.CCKConfig;
+import plus.dragons.createcentralkitchen.integration.ModIntegration;
 
-/**
- * Client entrypoint. For now it only loads the client config: the blaze burner heads, Ponder scenes and JEI plugin
- * of the NeoForge build are still to be ported.
- */
 public class CCKClient implements ClientModInitializer {
+    /** Client entry class of each ported integration, started by name and only when its mod is loaded. */
+    private static final Map<ModIntegration, String> INTEGRATIONS = Map.of(
+            ModIntegration.FARMERSDELIGHT, "plus.dragons.createcentralkitchen.integration.farmersdelight.FDIntegrationClient");
+
     @Override
     public void onInitializeClient() {
         CCKConfig.registerClient();
+        CCKPartialModels.register();
+        INTEGRATIONS.forEach((integration, className) -> {
+            if (integration.enabled())
+                startIntegration(integration, className);
+        });
+        // After the integrations: they add their scenes and tags to the plugin's lists.
+        PonderIndex.addPlugin(new CCKPonderPlugin());
+    }
+
+    private static void startIntegration(ModIntegration integration, String className) {
+        try {
+            Class.forName(className).getMethod("init").invoke(null);
+        } catch (ClassNotFoundException exception) {
+            CCKCommon.LOGGER.info("{} is loaded but this build has no client side for its integration", integration.id());
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to start the client side of the " + integration.id() + " integration", exception);
+        }
     }
 }

@@ -59,20 +59,10 @@ def hasIntegration = { name ->
 // Pendiente de portar a Fabric (F1c/F2): se quedan en su sitio, fuera de la compilacion, y se van quitando de esta lista
 // a medida que se portan. Ver LEEME.md de la carpeta del port.
 def notPortedYet = [
-        'plus/dragons/createcentralkitchen/client/burner/**',         // cabezas del blaze burner
-        'plus/dragons/createcentralkitchen/client/ponder/**',
-        'plus/dragons/createcentralkitchen/client/registry/**',       // modelos parciales y sprites
-        'plus/dragons/createcentralkitchen/mixin/create/client/**',   // mixins de cliente (burner, deployer)
-        'plus/dragons/createcentralkitchen/integration/jei/**',       // plugin de JEI
         'plus/dragons/createcentralkitchen/common/gametest/**',       // GameTests de NeoForge
-        'plus/dragons/createcentralkitchen/data/CCKLang.java',        // LangBuilder es solo de cliente en Create Fly
         'plus/dragons/createcentralkitchen/mixin/UniversalConditionalMixinPlugin.java', // sustituido por ModLoadedMixinPlugin
-        // Integracion de Farmer's Delight: la parte de cliente sigue pendiente (F1c)
-        'plus/dragons/createcentralkitchen/integration/farmersdelight/burner/**',
-        'plus/dragons/createcentralkitchen/integration/farmersdelight/ponder/**',
-        'plus/dragons/createcentralkitchen/integration/farmersdelight/FarmersDelightRecipeGameTests.java', // GameTests de NeoForge
-        'plus/dragons/createcentralkitchen/mixin/farmersdelight/CCKJeiPluginMixin.java',
-        'plus/dragons/createcentralkitchen/mixin/farmersdelight/client/**'
+        // Integracion de Farmer's Delight
+        'plus/dragons/createcentralkitchen/integration/farmersdelight/FarmersDelightRecipeGameTests.java' // GameTests de NeoForge
 ]
 
 sourceSets {

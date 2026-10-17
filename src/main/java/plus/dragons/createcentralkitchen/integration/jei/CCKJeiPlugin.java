@@ -18,110 +18,54 @@
 
 package plus.dragons.createcentralkitchen.integration.jei;
 
-import com.google.common.base.Preconditions;
-import com.simibubi.create.Create;
-import com.simibubi.create.compat.jei.category.CreateRecipeCategory;
-import com.simibubi.create.content.fluids.transfer.EmptyingRecipe;
-import com.simibubi.create.content.fluids.transfer.FillingRecipe;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
-import mezz.jei.api.recipe.RecipeType;
-import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeInput;
-import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraft.world.level.Level;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLLoader;
-import org.jetbrains.annotations.ApiStatus.Internal;
 import plus.dragons.createcentralkitchen.common.CCKCommon;
-import plus.dragons.createdragonsplus.util.CodeReference;
-import plus.dragons.createdragonsplus.util.ErrorMessages;
 
+/**
+ * JEI plugin of Central Kitchen. It has no categories of its own: each integration registers a
+ * {@link CCKJeiExtension} from its client initializer, before JEI loads its plugins.
+ */
 @JeiPlugin
 public class CCKJeiPlugin implements IModPlugin {
-    public static final ResourceLocation ID = CCKCommon.asResource("jei");
-    public final List<CreateRecipeCategory<?>> allCategories = new ArrayList<>();
+    public static final Identifier ID = CCKCommon.asResource("jei");
+    private static final List<CCKJeiExtension> EXTENSIONS = new CopyOnWriteArrayList<>();
 
-    public static final RecipeType<RecipeHolder<FillingRecipe>> SPOUT_FILLING = RecipeType
-            .createRecipeHolderType(Create.asResource("spout_filling"));
-    public static final RecipeType<RecipeHolder<EmptyingRecipe>> DRAINING = RecipeType
-            .createRecipeHolderType(Create.asResource("draining"));
+    public static void register(CCKJeiExtension extension) {
+        EXTENSIONS.add(extension);
+    }
+
+    /** A JEI recipe type whose recipes are recipe holders, like Create's own. */
+    @SuppressWarnings("unchecked")
+    public static <R> IRecipeType<R> recipeHolderType(String path) {
+        return (IRecipeType<R>) IRecipeType.create(CCKCommon.asResource(path), RecipeHolder.class);
+    }
 
     @Override
-    public ResourceLocation getPluginUid() {
+    public Identifier getPluginUid() {
         return ID;
     }
 
     @Override
-    public void registerRecipes(IRecipeRegistration registration) {
-        // Mixin area
-    }
-
-    private void loadCategories() {
-        allCategories.clear();
-        // Mixin area
-    }
-
-    @Internal
-    public static Level getLevel() {
-        if (FMLLoader.getDist() != Dist.CLIENT)
-            throw new IllegalStateException("Retreiving client level is only supported for client");
-        var minecraft = Minecraft.getInstance();
-        Preconditions.checkNotNull(minecraft, ErrorMessages.notNull("minecraft"));
-        var level = minecraft.level;
-        Preconditions.checkNotNull(level, ErrorMessages.notNull("level"));
-        return level;
-    }
-
-    @Internal
-    public static RecipeManager getRecipeManager() {
-        if (FMLLoader.getDist() != Dist.CLIENT)
-            throw new IllegalStateException("Retreiving recipe manager from client level is only supported for client");
-        var minecraft = Minecraft.getInstance();
-        Preconditions.checkNotNull(minecraft, ErrorMessages.notNull("minecraft"));
-        var level = minecraft.level;
-        Preconditions.checkNotNull(level, ErrorMessages.notNull("level"));
-        return level.getRecipeManager();
-    }
-
-    @Override
-    @CodeReference(source = "com.simibubi.create.compat.jei.CreateJEI", license = "mit")
     public void registerCategories(IRecipeCategoryRegistration registration) {
-        loadCategories();
-        registration.addRecipeCategories(allCategories.toArray(IRecipeCategory[]::new));
+        EXTENSIONS.forEach(extension -> extension.registerCategories(registration));
     }
 
     @Override
-    @CodeReference(source = "com.simibubi.create.compat.jei.CreateJEI", license = "mit")
+    public void registerRecipes(IRecipeRegistration registration) {
+        EXTENSIONS.forEach(extension -> extension.registerRecipes(registration));
+    }
+
+    @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
-        allCategories.forEach(c -> c.registerCatalysts(registration));
-    }
-
-    @CodeReference(source = "com.simibubi.create.compat.jei.CreateJEI", license = "mit")
-    public <T extends Recipe<? extends RecipeInput>> CCKJeiPlugin.CategoryBuilder<T> builder(Class<T> recipeClass) {
-        return new CCKJeiPlugin.CategoryBuilder<>(recipeClass);
-    }
-
-    @CodeReference(source = "com.simibubi.create.compat.jei.CreateJEI", license = "mit")
-    public class CategoryBuilder<T extends Recipe<?>> extends CreateRecipeCategory.Builder<T> {
-        public CategoryBuilder(Class<? extends T> recipeClass) {
-            super(recipeClass);
-        }
-
-        @Override
-        public CreateRecipeCategory<T> build(ResourceLocation id, CreateRecipeCategory.Factory<T> factory) {
-            CreateRecipeCategory<T> category = super.build(id, factory);
-            allCategories.add(category);
-            return category;
-        }
+        EXTENSIONS.forEach(extension -> extension.registerRecipeCatalysts(registration));
     }
 }

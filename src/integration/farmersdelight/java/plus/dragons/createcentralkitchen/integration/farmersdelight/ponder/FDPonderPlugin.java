@@ -18,15 +18,15 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.ponder;
 
-import com.simibubi.create.infrastructure.ponder.AllCreatePonderTags;
+import com.zurrtum.create.client.infrastructure.ponder.AllCreatePonderTags;
 import java.util.List;
-import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
-import net.createmod.ponder.api.registration.PonderTagRegistrationHelper;
+import com.zurrtum.create.client.ponder.api.registration.PonderSceneRegistrationHelper;
+import com.zurrtum.create.client.ponder.api.registration.PonderTagRegistrationHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import plus.dragons.createcentralkitchen.client.ponder.CCKPonderPlugin;
 import plus.dragons.createcentralkitchen.common.CCKCommon;
-import plus.dragons.createcentralkitchen.data.CCKLang;
+import plus.dragons.createcentralkitchen.client.CCKLang;
 import plus.dragons.createcentralkitchen.integration.ModIntegration;
 import plus.dragons.createdragonsplus.client.ponder.PonderTagGroups;
 import vectorwing.farmersdelight.common.block.AbstractStoveBlock;
@@ -34,20 +34,20 @@ import vectorwing.farmersdelight.common.block.FeastBlock;
 import vectorwing.farmersdelight.common.block.PieBlock;
 
 public class FDPonderPlugin {
-    private static final ResourceLocation CUTTING_BOARD = ModIntegration.FARMERSDELIGHT.asResource("cutting_board");
-    private static final ResourceLocation COOKING_POT = ModIntegration.FARMERSDELIGHT.asResource("cooking_pot");
-    private static final ResourceLocation FIERY_COOKING_POT = ModIntegration.TWILIGHTDELIGHT.asResource("fiery_cooking_pot");
-    private static final ResourceLocation POTTERY_COOKING_POT = ModIntegration.TRAILANDTALESDELIGHT.asResource("pottery_cooking_pot");
-    private static final ResourceLocation COPPER_POT = ModIntegration.MINERSDELIGHT.asResource("copper_pot");
-    private static final ResourceLocation SKILLET = ModIntegration.FARMERSDELIGHT.asResource("skillet");
-    private static final ResourceLocation MONSTER_POT = ModIntegration.DUNGEONSDELIGHT.asResource("monster_pot");
+    private static final Identifier CUTTING_BOARD = ModIntegration.FARMERSDELIGHT.asResource("cutting_board");
+    private static final Identifier COOKING_POT = ModIntegration.FARMERSDELIGHT.asResource("cooking_pot");
+    private static final Identifier FIERY_COOKING_POT = ModIntegration.TWILIGHTDELIGHT.asResource("fiery_cooking_pot");
+    private static final Identifier POTTERY_COOKING_POT = ModIntegration.TRAILANDTALESDELIGHT.asResource("pottery_cooking_pot");
+    private static final Identifier COPPER_POT = ModIntegration.MINERSDELIGHT.asResource("copper_pot");
+    private static final Identifier SKILLET = ModIntegration.FARMERSDELIGHT.asResource("skillet");
+    private static final Identifier MONSTER_POT = ModIntegration.DUNGEONSDELIGHT.asResource("monster_pot");
 
     public static void register() {
         CCKPonderPlugin.SCENES.add(FDPonderPlugin::registerScenes);
         CCKPonderPlugin.TAGS.add(FDPonderPlugin::registerTags);
     }
 
-    private static void registerScenes(PonderSceneRegistrationHelper<ResourceLocation> helper) {
+    private static void registerScenes(PonderSceneRegistrationHelper<Identifier> helper) {
         helper.forComponents(CUTTING_BOARD)
                 .addStoryBoard("farmersdelight/cutting_board", FDPonderScenes::cuttingBoard,
                         AllCreatePonderTags.ARM_TARGETS);
@@ -74,7 +74,7 @@ public class FDPonderPlugin {
         }
     }
 
-    private static void registerTags(PonderTagRegistrationHelper<ResourceLocation> helper) {
+    private static void registerTags(PonderTagRegistrationHelper<Identifier> helper) {
         var armTargets = helper.addToTag(AllCreatePonderTags.ARM_TARGETS)
                 .add(CUTTING_BOARD)
                 .add(COOKING_POT)
@@ -92,23 +92,23 @@ public class FDPonderPlugin {
                 .addAll(wholePortionableFoods());
     }
 
-    private static List<ResourceLocation> abstractStoves() {
+    private static List<Identifier> abstractStoves() {
         return BuiltInRegistries.BLOCK.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue() instanceof AbstractStoveBlock)
-                .map(entry -> entry.getKey().location())
+                .map(entry -> entry.getKey().identifier())
                 .toList();
     }
 
-    private static List<ResourceLocation> portionableFoods() {
+    private static List<Identifier> portionableFoods() {
         return BuiltInRegistries.BLOCK.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue() instanceof FeastBlock || entry.getValue() instanceof PieBlock)
-                .map(entry -> entry.getKey().location())
+                .map(entry -> entry.getKey().identifier())
                 .toList();
     }
 
-    private static List<ResourceLocation> wholePortionableFoods() {
+    private static List<Identifier> wholePortionableFoods() {
         return BuiltInRegistries.BLOCK.entrySet().stream()
                 .filter(entry -> {
                     var block = entry.getValue();
@@ -120,7 +120,7 @@ public class FDPonderPlugin {
                     }
                     return block instanceof PieBlock && state.hasProperty(PieBlock.BITES) && state.getValue(PieBlock.BITES) == 0;
                 })
-                .map(entry -> entry.getKey().location())
+                .map(entry -> entry.getKey().identifier())
                 .toList();
     }
 }

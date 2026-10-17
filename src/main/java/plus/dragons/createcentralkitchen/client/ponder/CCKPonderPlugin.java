@@ -21,16 +21,16 @@ package plus.dragons.createcentralkitchen.client.ponder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import net.createmod.ponder.api.registration.PonderPlugin;
-import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
-import net.createmod.ponder.api.registration.PonderTagRegistrationHelper;
-import net.createmod.ponder.api.registration.SharedTextRegistrationHelper;
-import net.minecraft.resources.ResourceLocation;
+import com.zurrtum.create.client.ponder.api.registration.PonderPlugin;
+import com.zurrtum.create.client.ponder.api.registration.PonderSceneRegistrationHelper;
+import com.zurrtum.create.client.ponder.api.registration.PonderTagRegistrationHelper;
+import com.zurrtum.create.client.ponder.api.registration.SharedTextRegistrationHelper;
+import net.minecraft.resources.Identifier;
 import plus.dragons.createcentralkitchen.common.CCKCommon;
 
 public class CCKPonderPlugin implements PonderPlugin {
-    public static final List<Consumer<PonderSceneRegistrationHelper<ResourceLocation>>> SCENES = new ArrayList<>();
-    public static final List<Consumer<PonderTagRegistrationHelper<ResourceLocation>>> TAGS = new ArrayList<>();
+    public static final List<Consumer<PonderSceneRegistrationHelper<Identifier>>> SCENES = new ArrayList<>();
+    public static final List<Consumer<PonderTagRegistrationHelper<Identifier>>> TAGS = new ArrayList<>();
 
     @Override
     public String getModId() {
@@ -38,13 +38,13 @@ public class CCKPonderPlugin implements PonderPlugin {
     }
 
     @Override
-    public void registerScenes(PonderSceneRegistrationHelper<ResourceLocation> helper) {
+    public void registerScenes(PonderSceneRegistrationHelper<Identifier> helper) {
         for (var scene : SCENES)
             scene.accept(helper);
     }
 
     @Override
-    public void registerTags(PonderTagRegistrationHelper<ResourceLocation> helper) {
+    public void registerTags(PonderTagRegistrationHelper<Identifier> helper) {
         for (var tag : TAGS)
             tag.accept(helper);
     }

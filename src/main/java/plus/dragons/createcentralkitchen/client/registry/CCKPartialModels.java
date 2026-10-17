@@ -18,7 +18,7 @@
 
 package plus.dragons.createcentralkitchen.client.registry;
 
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
 import plus.dragons.createcentralkitchen.common.CCKCommon;
 
 public class CCKPartialModels {
@@ -28,18 +28,8 @@ public class CCKPartialModels {
     public static final PartialModel FIERY_CHEF_HAT_SMALL = block("blaze_burner/fiery_chef_hat_small");
     public static final PartialModel POTTERY_CHEF_HAT = block("blaze_burner/pottery_chef_hat");
     public static final PartialModel POTTERY_CHEF_HAT_SMALL = block("blaze_burner/pottery_chef_hat_small");
-    public static final PartialModel DUNGEON_BLAZE_INERT = block("blaze_burner/dungeon/blaze/inert");
-    public static final PartialModel DUNGEON_BLAZE_IDLE = block("blaze_burner/dungeon/blaze/idle");
-    public static final PartialModel DUNGEON_BLAZE_ACTIVE = block("blaze_burner/dungeon/blaze/active");
-    public static final PartialModel DUNGEON_BLAZE_SUPER = block("blaze_burner/dungeon/blaze/super");
-    public static final PartialModel DUNGEON_BLAZE_SUPER_ACTIVE = block("blaze_burner/dungeon/blaze/super_active");
-    public static final PartialModel DUNGEON_BLAZE_BURNER_RODS = block("blaze_burner/dungeon/rods_small");
-    public static final PartialModel DUNGEON_BLAZE_BURNER_RODS_2 = block("blaze_burner/dungeon/rods_large");
-    public static final PartialModel DUNGEON_BLAZE_BURNER_SUPER_RODS = block("blaze_burner/dungeon/superheated_rods_small");
-    public static final PartialModel DUNGEON_BLAZE_BURNER_SUPER_RODS_2 = block("blaze_burner/dungeon/superheated_rods_large");
-    public static final PartialModel DUNGEON_CHEF_HAT = block("blaze_burner/dungeon/chef_hat");
-    public static final PartialModel DUNGEON_CHEF_HAT_SMALL = block("blaze_burner/dungeon/chef_hat_small");
 
+    /** Loads this class (and with it the partial models) during client initialization. */
     public static void register() {}
 
     private static PartialModel block(String path) {

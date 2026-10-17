@@ -18,34 +18,36 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.ponder;
 
-import com.simibubi.create.content.kinetics.deployer.DeployerBlockEntity;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmBlockEntity;
-import com.simibubi.create.content.logistics.box.PackageItem;
-import com.simibubi.create.content.logistics.depot.DepotBlockEntity;
-import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelBlock;
-import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelBlockEntity;
-import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelPosition;
-import com.simibubi.create.foundation.ponder.CreateSceneBuilder;
-import com.simibubi.create.infrastructure.ponder.scenes.highLogistics.PonderHilo;
+import com.zurrtum.create.content.kinetics.deployer.DeployerBlockEntity;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmBlockEntity;
+import com.zurrtum.create.content.logistics.box.PackageItem;
+import com.zurrtum.create.content.logistics.depot.DepotBlockEntity;
+import com.zurrtum.create.content.logistics.factoryBoard.FactoryPanelBlockEntity;
+import com.zurrtum.create.content.logistics.factoryBoard.FactoryPanelPosition;
+import com.zurrtum.create.content.logistics.factoryBoard.PanelSlot;
+import com.zurrtum.create.content.kinetics.belt.transport.TransportedItemStack;
+import com.zurrtum.create.client.foundation.ponder.CreateSceneBuilder;
+import com.zurrtum.create.client.infrastructure.ponder.scenes.highLogistics.PonderHilo;
 import java.util.List;
 import java.util.Optional;
-import net.createmod.catnip.math.Pointing;
-import net.createmod.ponder.api.PonderPalette;
-import net.createmod.ponder.api.scene.SceneBuilder;
-import net.createmod.ponder.api.scene.SceneBuildingUtil;
-import net.createmod.ponder.foundation.instruction.DisplayWorldSectionInstruction;
-import net.createmod.ponder.foundation.instruction.FadeOutOfSceneInstruction;
+import com.zurrtum.create.catnip.math.Pointing;
+import com.zurrtum.create.client.ponder.api.PonderPalette;
+import com.zurrtum.create.client.ponder.api.scene.SceneBuilder;
+import com.zurrtum.create.client.ponder.api.scene.SceneBuildingUtil;
+import com.zurrtum.create.client.ponder.foundation.instruction.DisplayWorldSectionInstruction;
+import com.zurrtum.create.client.ponder.foundation.instruction.FadeOutOfSceneInstruction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.data.loading.DatagenModLoader;
+import plus.dragons.createcentralkitchen.client.CCKLang;
 import plus.dragons.createcentralkitchen.common.CCKCommon;
 import vectorwing.farmersdelight.common.block.FeastBlock;
 import vectorwing.farmersdelight.common.block.PieBlock;
@@ -59,7 +61,7 @@ public class FDPonderScenes {
     public record StatefulPortionScene(
             String id,
             String title,
-            ResourceLocation interactionPointType,
+            Identifier interactionPointType,
             BlockState initialState,
             List<BlockState> extractionStates,
             ItemStack serving,
@@ -73,9 +75,9 @@ public class FDPonderScenes {
             ItemStack returned,
             String text) {}
 
-    private record ArmPoint(ResourceLocation type, BlockPos relativePosition, String mode) {}
+    private record ArmPoint(Identifier type, BlockPos relativePosition, String mode) {}
 
-    private static final ResourceLocation DEPOT_ARM_POINT = ResourceLocation.fromNamespaceAndPath("create", "depot");
+    private static final Identifier DEPOT_ARM_POINT = Identifier.fromNamespaceAndPath("create", "depot");
 
     /** Shared scene for addon foods represented by several block states instead of Farmer's Delight base classes. */
     public static void statefulPortionableFood(SceneBuilder builder, SceneBuildingUtil util, StatefulPortionScene config) {
@@ -99,13 +101,13 @@ public class FDPonderScenes {
         scene.world().setBlock(foodPos, config.initialState(), false);
         scene.world().modifyBlockEntityNBT(arm, ArmBlockEntity.class, nbt -> setArmPoints(
                 nbt,
-                new ArmPoint(config.interactionPointType(), new BlockPos(1, 0, 2), "TAKE"),
-                new ArmPoint(DEPOT_ARM_POINT, new BlockPos(-1, 0, 0), "DEPOSIT")));
+                new ArmPoint(config.interactionPointType(), new BlockPos(1, 0, 2), "take"),
+                new ArmPoint(DEPOT_ARM_POINT, new BlockPos(-1, 0, 0), "deposit")));
         scene.world().modifyBlockEntityNBT(secondArm, ArmBlockEntity.class, nbt -> setArmPoints(
                 nbt,
-                new ArmPoint(DEPOT_ARM_POINT, new BlockPos(1, 0, 0), "TAKE"),
-                new ArmPoint(config.interactionPointType(), new BlockPos(-1, 0, 2), "DEPOSIT"),
-                new ArmPoint(DEPOT_ARM_POINT, new BlockPos(-3, 0, 0), "DEPOSIT")));
+                new ArmPoint(DEPOT_ARM_POINT, new BlockPos(1, 0, 0), "take"),
+                new ArmPoint(config.interactionPointType(), new BlockPos(-1, 0, 2), "deposit"),
+                new ArmPoint(DEPOT_ARM_POINT, new BlockPos(-3, 0, 0), "deposit")));
         scene.world().showSection(food.add(output), Direction.DOWN);
         scene.world().setKineticSpeed(arm, 64);
         scene.overlay().showText(80)
@@ -127,10 +129,10 @@ public class FDPonderScenes {
             scene.idle(20);
             scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, config.serving().copy(), 0);
             scene.idle(24);
-            scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(config.serving().copy()));
+            scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(config.serving().copy())));
             scene.world().instructArm(armPos, ArmBlockEntity.Phase.SEARCH_INPUTS, ItemStack.EMPTY, -1);
             scene.idle(20);
-            scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(ItemStack.EMPTY));
+            scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.removeHeldItem());
         }
 
         config.insertion().ifPresent(insertion -> {
@@ -138,7 +140,7 @@ public class FDPonderScenes {
             scene.world().showSection(input.add(secondArm), Direction.DOWN);
             scene.world().setBlock(foodPos, insertion.beforeState(), false);
             scene.world().setKineticSpeed(secondArm, -64);
-            scene.world().modifyBlockEntity(inputPos, DepotBlockEntity.class, be -> be.setHeldItem(insertion.input().copy()));
+            scene.world().modifyBlockEntity(inputPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(insertion.input().copy())));
             scene.overlay().showText(80)
                     .text(insertion.text())
                     .pointAt(util.vector().centerOf(foodPos))
@@ -149,7 +151,7 @@ public class FDPonderScenes {
             scene.idle(30);
             scene.world().instructArm(secondArmPos, ArmBlockEntity.Phase.MOVE_TO_INPUT, ItemStack.EMPTY, 0);
             scene.idle(24);
-            scene.world().modifyBlockEntity(inputPos, DepotBlockEntity.class, be -> be.setHeldItem(ItemStack.EMPTY));
+            scene.world().modifyBlockEntity(inputPos, DepotBlockEntity.class, be -> be.removeHeldItem());
             scene.world().instructArm(secondArmPos, ArmBlockEntity.Phase.SEARCH_OUTPUTS, insertion.input().copy(), -1);
             scene.idle(20);
             scene.world().instructArm(secondArmPos, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, insertion.input().copy(), 0);
@@ -163,7 +165,7 @@ public class FDPonderScenes {
                 scene.overlay().showOutline(PonderPalette.OUTPUT, output, output, 40);
                 scene.world().instructArm(secondArmPos, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, insertion.returned().copy(), 1);
                 scene.idle(24);
-                scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(insertion.returned().copy()));
+                scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(insertion.returned().copy())));
                 scene.world().instructArm(secondArmPos, ArmBlockEntity.Phase.SEARCH_INPUTS, ItemStack.EMPTY, -1);
             }
             scene.idle(20);
@@ -175,7 +177,7 @@ public class FDPonderScenes {
         for (var point : points) {
             var pointNbt = new CompoundTag();
             pointNbt.putString("Type", point.type().toString());
-            pointNbt.put("Pos", NbtUtils.writeBlockPos(point.relativePosition()));
+            pointNbt.put("Pos", new IntArrayTag(new int[] { point.relativePosition().getX(), point.relativePosition().getY(), point.relativePosition().getZ() }));
             pointNbt.putString("Mode", point.mode());
             interactionPoints.add(pointNbt);
         }
@@ -224,11 +226,11 @@ public class FDPonderScenes {
         scene.idle(20);
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, roastChicken, 0);
         scene.idle(24);
-        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(roastChicken));
+        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(roastChicken)));
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.SEARCH_INPUTS, ItemStack.EMPTY, -1);
         scene.idle(20);
 
-        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(ItemStack.EMPTY));
+        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.removeHeldItem());
         scene.overlay().showOutline(PonderPalette.INPUT, pie, pie, 40);
         scene.overlay().showOutline(PonderPalette.OUTPUT, output, output, 40);
         var pieSlice = ModItems.APPLE_PIE_SLICE.get().getDefaultInstance();
@@ -239,12 +241,12 @@ public class FDPonderScenes {
         scene.idle(20);
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, pieSlice, 0);
         scene.idle(24);
-        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(pieSlice));
+        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(pieSlice)));
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.SEARCH_INPUTS, ItemStack.EMPTY, -1);
         scene.idle(20);
 
         scene.rotateCameraY(180);
-        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(ItemStack.EMPTY));
+        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.removeHeldItem());
         scene.world().modifyBlock(feastPos, state -> state.setValue(FeastBlock.SERVINGS, 1), false);
         scene.overlay().showText(60)
                 .text("The last serving is kept in place")
@@ -260,7 +262,7 @@ public class FDPonderScenes {
         scene.world().setKineticSpeed(arm2, -64);
         scene.idle(10);
         var roastChickenBlock = ModItems.ROAST_CHICKEN_BLOCK.get().getDefaultInstance();
-        scene.world().modifyBlockEntity(inputPos, DepotBlockEntity.class, be -> be.setHeldItem(roastChickenBlock));
+        scene.world().modifyBlockEntity(inputPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(roastChickenBlock)));
         scene.overlay().showText(70)
                 .text("A fresh whole food can replace it and return the last serving")
                 .independent()
@@ -271,7 +273,7 @@ public class FDPonderScenes {
         scene.idle(30);
         scene.world().instructArm(armPos2, ArmBlockEntity.Phase.MOVE_TO_INPUT, ItemStack.EMPTY, 1);
         scene.idle(24);
-        scene.world().modifyBlockEntity(inputPos, DepotBlockEntity.class, be -> be.setHeldItem(ItemStack.EMPTY));
+        scene.world().modifyBlockEntity(inputPos, DepotBlockEntity.class, be -> be.removeHeldItem());
         scene.world().instructArm(armPos2, ArmBlockEntity.Phase.SEARCH_INPUTS, roastChickenBlock, -1);
         scene.idle(20);
         scene.world().instructArm(armPos2, ArmBlockEntity.Phase.MOVE_TO_INPUT, roastChickenBlock, 0);
@@ -281,7 +283,7 @@ public class FDPonderScenes {
         scene.idle(20);
         scene.world().instructArm(armPos2, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, roastChicken, 0);
         scene.idle(24);
-        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(roastChicken));
+        scene.world().modifyBlockEntity(outputPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(roastChicken)));
         scene.world().instructArm(armPos2, ArmBlockEntity.Phase.SEARCH_INPUTS, ItemStack.EMPTY, -1);
         scene.idle(20);
     }
@@ -325,15 +327,15 @@ public class FDPonderScenes {
                 .placeNearTarget();
         var outFG = util.grid().at(4, 2, 1);
         builder.world().modifyBlockEntity(outFG, FactoryPanelBlockEntity.class, be -> {
-            var panel = be.panels.get(FactoryPanelBlock.PanelSlot.TOP_RIGHT);
-            panel.addConnection(new FactoryPanelPosition(util.grid().at(5, 2, 1), FactoryPanelBlock.PanelSlot.BOTTOM_RIGHT));
-            panel.addConnection(new FactoryPanelPosition(util.grid().at(5, 3, 1), FactoryPanelBlock.PanelSlot.BOTTOM_RIGHT));
-            panel.addConnection(new FactoryPanelPosition(util.grid().at(6, 2, 1), FactoryPanelBlock.PanelSlot.TOP_RIGHT));
-            panel.addConnection(new FactoryPanelPosition(util.grid().at(6, 3, 1), FactoryPanelBlock.PanelSlot.TOP_RIGHT));
+            var panel = be.panels.get(PanelSlot.TOP_RIGHT);
+            panel.addConnection(new FactoryPanelPosition(util.grid().at(5, 2, 1), PanelSlot.BOTTOM_RIGHT));
+            panel.addConnection(new FactoryPanelPosition(util.grid().at(5, 3, 1), PanelSlot.BOTTOM_RIGHT));
+            panel.addConnection(new FactoryPanelPosition(util.grid().at(6, 2, 1), PanelSlot.TOP_RIGHT));
+            panel.addConnection(new FactoryPanelPosition(util.grid().at(6, 3, 1), PanelSlot.TOP_RIGHT));
         });
         scene.idle(40);
         builder.world().modifyBlockEntity(outFG, FactoryPanelBlockEntity.class, be -> {
-            var panel = be.panels.get(FactoryPanelBlock.PanelSlot.TOP_RIGHT);
+            var panel = be.panels.get(PanelSlot.TOP_RIGHT);
             panel.count = 4;
         });
         scene.idle(10);
@@ -353,7 +355,7 @@ public class FDPonderScenes {
         scene.world().showSection(util.select().position(2, 1, 2)
                 .add(util.select().fromTo(3, 1, 4, 3, 2, 4)), Direction.DOWN);
         scene.world().setKineticSpeed(util.select().position(2, 1, 2), 128);
-        scene.world().modifyBlockEntity(util.grid().at(3, 1, 4), DepotBlockEntity.class, depot -> depot.setHeldItem(Items.BOWL.getDefaultInstance()));
+        scene.world().modifyBlockEntity(util.grid().at(3, 1, 4), DepotBlockEntity.class, depot -> depot.setHeldItem(new TransportedItemStack(Items.BOWL.getDefaultInstance())));
         scene.overlay().showText(60)
                 .sharedText(CCKCommon.asResource("arm_automate_container_insertion"))
                 .pointAt(util.vector().centerOf(2, 1, 2))
@@ -367,7 +369,7 @@ public class FDPonderScenes {
         scene.idle(40);
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_INPUT, ItemStack.EMPTY, 0);
         scene.idle(20);
-        scene.world().modifyBlockEntity(util.grid().at(3, 1, 4), DepotBlockEntity.class, depot -> depot.setHeldItem(ItemStack.EMPTY));
+        scene.world().modifyBlockEntity(util.grid().at(3, 1, 4), DepotBlockEntity.class, depot -> depot.removeHeldItem());
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.SEARCH_OUTPUTS, Items.BOWL.getDefaultInstance(), -1);
         scene.idle(20);
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, Items.BOWL.getDefaultInstance(), 0);
@@ -393,7 +395,7 @@ public class FDPonderScenes {
         scene.idle(20);
         scene.world().instructArm(armPos2, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, ModItems.CHICKEN_SOUP.get().getDefaultInstance(), 0);
         scene.idle(20);
-        scene.world().modifyBlockEntity(util.grid().at(1, 1, 0), DepotBlockEntity.class, depot -> depot.setHeldItem(ModItems.CHICKEN_SOUP.get().getDefaultInstance()));
+        scene.world().modifyBlockEntity(util.grid().at(1, 1, 0), DepotBlockEntity.class, depot -> depot.setHeldItem(new TransportedItemStack(ModItems.CHICKEN_SOUP.get().getDefaultInstance())));
         scene.world().instructArm(armPos2, ArmBlockEntity.Phase.MOVE_TO_INPUT, ItemStack.EMPTY, -1);
         scene.idle(10);
 
@@ -491,10 +493,10 @@ public class FDPonderScenes {
         scene.overlay().showOutline(PonderPalette.INPUT, depot, depot, 40);
         scene.overlay().showOutline(PonderPalette.OUTPUT, stove, stove.add(skillet), 40);
         scene.idle(40);
-        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.setHeldItem(Items.BEEF.getDefaultInstance()));
+        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(Items.BEEF.getDefaultInstance())));
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_INPUT, ItemStack.EMPTY, 0);
         scene.idle(20);
-        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.setHeldItem(ItemStack.EMPTY));
+        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.removeHeldItem());
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.SEARCH_OUTPUTS, Items.BEEF.getDefaultInstance(), -1);
         scene.idle(20);
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, Items.BEEF.getDefaultInstance(), 0);
@@ -502,11 +504,11 @@ public class FDPonderScenes {
         scene.world().modifyBlockEntity(skilletPos, SkilletBlockEntity.class, be -> be.getInventory().insertItem(0, Items.BEEF.getDefaultInstance(), false));
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_INPUT, ItemStack.EMPTY, -1);
         scene.idle(10);
-        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.setHeldItem(Items.BEEF.getDefaultInstance()));
+        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(Items.BEEF.getDefaultInstance())));
         scene.idle(10);
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_INPUT, ItemStack.EMPTY, 0);
         scene.idle(20);
-        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.setHeldItem(ItemStack.EMPTY));
+        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.removeHeldItem());
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.SEARCH_OUTPUTS, Items.BEEF.getDefaultInstance(), -1);
         scene.idle(20);
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, Items.BEEF.getDefaultInstance(), 1);
@@ -556,10 +558,10 @@ public class FDPonderScenes {
         scene.overlay().showOutline(PonderPalette.INPUT, depot, depot, 40);
         scene.overlay().showOutline(PonderPalette.OUTPUT, cuttingBoard, cuttingBoard, 40);
         scene.idle(40);
-        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.setHeldItem(Items.CHICKEN.getDefaultInstance()));
+        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.setHeldItem(new TransportedItemStack(Items.CHICKEN.getDefaultInstance())));
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_INPUT, ItemStack.EMPTY, 0);
         scene.idle(20);
-        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.setHeldItem(ItemStack.EMPTY));
+        scene.world().modifyBlockEntity(depotPos, DepotBlockEntity.class, be -> be.removeHeldItem());
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.SEARCH_OUTPUTS, Items.CHICKEN.getDefaultInstance(), -1);
         scene.idle(20);
         scene.world().instructArm(armPos, ArmBlockEntity.Phase.MOVE_TO_OUTPUT, Items.CHICKEN.getDefaultInstance(), 0);
@@ -573,12 +575,12 @@ public class FDPonderScenes {
         scene.world().hideIndependentSection(tempGround, Direction.DOWN);
         scene.world().showSection(belt.add(deployer), Direction.DOWN);
         var tool = ModItems.IRON_KNIFE.get().getDefaultInstance();
-        if (!DatagenModLoader.isRunningDataGen()) {
-            scene.world().modifyBlockEntityNBT(deployer, DeployerBlockEntity.class, nbt -> {
-                nbt.put("HeldItem", tool.saveOptional(scene.world().getHolderLookupProvider())); // null in datagen
-                nbt.putString("Mode", "USE");
-            });
-        }
+        scene.world().modifyBlockEntityNBT(deployer, DeployerBlockEntity.class, nbt -> {
+            nbt.put("HeldItem", ItemStack.OPTIONAL_CODEC
+                    .encodeStart(scene.world().getHolderLookupProvider().createSerializationContext(NbtOps.INSTANCE), tool)
+                    .getOrThrow());
+            nbt.putString("Mode", "use");
+        });
         scene.overlay().showText(60)
                 .text("Deployer with a knife in Use Mode can cut raw ingredient")
                 .pointAt(util.vector().centerOf(5, 2, 3))

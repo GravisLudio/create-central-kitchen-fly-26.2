@@ -18,53 +18,30 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.burner;
 
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import javax.annotation.Nullable;
-import net.minecraft.resources.ResourceLocation;
-import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerRenderOverride;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
+import net.minecraft.resources.Identifier;
+import org.jetbrains.annotations.Nullable;
+import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerRenderOverrides;
 import plus.dragons.createcentralkitchen.client.registry.CCKPartialModels;
 
+/** The chef hats worn by blaze burners under Farmer's Delight cooking blocks. */
 public class BlazeChefRenderOverrides {
     public static final int SPECIAL_PRIORITY = 0;
     public static final int DEFAULT_PRIORITY = -1000;
-    private static final List<Entry> OVERRIDES = new ArrayList<>();
-    private static List<BlazeBurnerRenderOverride> sortedOverrides = List.of();
     private static boolean defaultsRegistered = false;
-    private static boolean dirty = false;
 
-    public static void registerDefaults() {
+    public static synchronized void registerDefaults() {
         if (defaultsRegistered)
             return;
-        register(DEFAULT_PRIORITY, null, CCKPartialModels.CHEF_HAT, CCKPartialModels.CHEF_HAT_SMALL);
         defaultsRegistered = true;
+        register(DEFAULT_PRIORITY, null, CCKPartialModels.CHEF_HAT, CCKPartialModels.CHEF_HAT_SMALL);
     }
 
-    public static void register(ResourceLocation targetBlock, PartialModel hat, PartialModel smallHat) {
+    public static void register(Identifier targetBlock, PartialModel hat, PartialModel smallHat) {
         register(SPECIAL_PRIORITY, targetBlock, hat, smallHat);
     }
 
-    public static void register(int priority, @Nullable ResourceLocation targetBlock, PartialModel hat, PartialModel smallHat) {
-        register(priority, new BlazeChefRenderOverride(targetBlock, hat, smallHat));
+    public static void register(int priority, @Nullable Identifier targetBlock, PartialModel hat, PartialModel smallHat) {
+        BlazeBurnerRenderOverrides.register(priority, new BlazeChefRenderOverride(targetBlock, hat, smallHat));
     }
-
-    public static void register(int priority, BlazeBurnerRenderOverride override) {
-        OVERRIDES.add(new Entry(priority, override));
-        dirty = true;
-    }
-
-    public static List<BlazeBurnerRenderOverride> values() {
-        if (dirty) {
-            sortedOverrides = OVERRIDES.stream()
-                    .sorted(Comparator.comparingInt(Entry::priority).reversed())
-                    .map(Entry::override)
-                    .toList();
-            dirty = false;
-        }
-        return sortedOverrides;
-    }
-
-    private record Entry(int priority, BlazeBurnerRenderOverride override) {}
 }

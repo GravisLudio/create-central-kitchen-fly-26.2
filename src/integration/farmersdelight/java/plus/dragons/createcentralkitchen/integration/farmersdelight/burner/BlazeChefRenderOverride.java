@@ -18,12 +18,12 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.burner;
 
-import com.simibubi.create.content.processing.burner.BlazeBurnerBlockEntity;
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
+import com.zurrtum.create.content.processing.burner.BlazeBurnerBlockEntity;
+import com.zurrtum.create.client.flywheel.lib.model.baked.PartialModel;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerRenderOverride;
 import vectorwing.farmersdelight.common.block.entity.HeatableBlockEntity;
@@ -31,11 +31,11 @@ import vectorwing.farmersdelight.common.tag.ModTags;
 
 public class BlazeChefRenderOverride implements BlazeBurnerRenderOverride {
     @Nullable
-    private final ResourceLocation targetBlock;
+    private final Identifier targetBlock;
     private final PartialModel hat;
     private final PartialModel smallHat;
 
-    public BlazeChefRenderOverride(@Nullable ResourceLocation targetBlock, PartialModel hat, PartialModel smallHat) {
+    public BlazeChefRenderOverride(@Nullable Identifier targetBlock, PartialModel hat, PartialModel smallHat) {
         this.targetBlock = targetBlock;
         this.hat = hat;
         this.smallHat = smallHat;

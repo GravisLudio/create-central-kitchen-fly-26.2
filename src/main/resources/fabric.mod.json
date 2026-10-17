@@ -21,10 +21,17 @@
     ],
     "client": [
       "plus.dragons.createcentralkitchen.client.CCKClient"
+    ],
+    "jei_mod_plugin": [
+      "plus.dragons.createcentralkitchen.integration.jei.CCKJeiPlugin"
     ]
   },
   "mixins": [
-    "create_central_kitchen.mixins.json"${integration_mixin_entries}
+    "create_central_kitchen.mixins.json"${integration_mixin_entries},
+    {
+      "config": "create_central_kitchen.client.mixins.json",
+      "environment": "client"
+    }
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",

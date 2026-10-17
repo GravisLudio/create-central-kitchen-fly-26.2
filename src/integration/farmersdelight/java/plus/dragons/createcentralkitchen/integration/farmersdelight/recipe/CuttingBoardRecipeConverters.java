@@ -23,6 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import com.zurrtum.create.AllRecipeTypes;
 import com.zurrtum.create.content.kinetics.saw.CuttingRecipe;
 import com.zurrtum.create.content.processing.recipe.ProcessingOutput;
+import java.util.Collection;
 import java.util.List;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -70,9 +71,14 @@ public class CuttingBoardRecipeConverters {
         return INDEXES.asMap().computeIfAbsent(manager, CuttingBoardRecipeConverters::buildIndex);
     }
 
-    @SuppressWarnings("unchecked")
     private static Index buildIndex(RecipeManager manager) {
-        var cutting = manager.getRecipes().stream()
+        return buildIndex(manager.getRecipes());
+    }
+
+    /** Builds the index from any set of recipes, e.g. the copy JEI keeps on the client. */
+    @SuppressWarnings("unchecked")
+    public static Index buildIndex(Collection<RecipeHolder<?>> recipes) {
+        var cutting = recipes.stream()
                 .filter(holder -> holder.value().getType() == ModRecipeTypes.CUTTING.get())
                 .map(holder -> (RecipeHolder<CuttingBoardRecipe>) holder)
                 .toList();
