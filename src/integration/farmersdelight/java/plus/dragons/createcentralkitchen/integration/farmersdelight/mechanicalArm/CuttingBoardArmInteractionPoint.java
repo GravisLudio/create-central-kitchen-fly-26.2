@@ -18,18 +18,19 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.mechanicalArm;
 
-import com.simibubi.create.content.kinetics.mechanicalArm.AllArmInteractionPointTypes.DepositOnlyArmInteractionPoint;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmBlockEntity;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
+import com.zurrtum.create.content.kinetics.mechanicalArm.AllArmInteractionPointTypes.DepositOnlyArmInteractionPoint;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmBlockEntity;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import vectorwing.farmersdelight.common.block.entity.CuttingBoardBlockEntity;
-import vectorwing.farmersdelight.common.registry.ModRecipeTypes;
+import plus.dragons.createcentralkitchen.integration.farmersdelight.recipe.CuttingBoardRecipeConverters;
 
 public class CuttingBoardArmInteractionPoint extends DepositOnlyArmInteractionPoint {
     public CuttingBoardArmInteractionPoint(ArmInteractionPointType type, Level level, BlockPos pos, BlockState state) {
@@ -49,10 +50,11 @@ public class CuttingBoardArmInteractionPoint extends DepositOnlyArmInteractionPo
     private boolean hasCuttingRecipe(ItemStack stack) {
         if (stack.isEmpty())
             return false;
-        var recipeManager = level.getRecipeManager();
-        return recipeManager.getAllRecipesFor(ModRecipeTypes.CUTTING.get())
+        if (!(level instanceof ServerLevel serverLevel))
+            return false;
+        return CuttingBoardRecipeConverters.index(serverLevel.recipeAccess()).cutting()
                 .stream()
-                .anyMatch(holder -> holder.value().getIngredients().getFirst().test(stack));
+                .anyMatch(holder -> holder.value().getInput().test(stack));
     }
 
     @Override

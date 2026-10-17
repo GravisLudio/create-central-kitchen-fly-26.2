@@ -18,10 +18,7 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.registry;
 
-import static plus.dragons.createcentralkitchen.common.registry.CCKArmInteractionPointTypes.*;
-
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
-import net.neoforged.neoforge.registries.DeferredHolder;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
 import plus.dragons.createcentralkitchen.common.registry.CCKArmInteractionPointTypes;
 import plus.dragons.createcentralkitchen.integration.farmersdelight.mechanicalArm.CookingPotArmInteractionPoint;
 import plus.dragons.createcentralkitchen.integration.farmersdelight.mechanicalArm.CuttingBoardArmInteractionPoint;
@@ -31,19 +28,19 @@ import plus.dragons.createcentralkitchen.integration.farmersdelight.mechanicalAr
 
 public class FDArmInteractionPointTypes {
     //spotless:off
-    public static final DeferredHolder<ArmInteractionPointType, ArmInteractionPointType>
-            COOKING_POT = holder("cooking_pot"),
-            CUTTING_BOARD = holder("cutting_board"),
-            PORTIONABLE_FOOD = holder("portionable_food"),
-            SKILLET = holder("skillet"),
-            STOVE = holder("stove");
+    public static ArmInteractionPointType
+            COOKING_POT,
+            CUTTING_BOARD,
+            PORTIONABLE_FOOD,
+            SKILLET,
+            STOVE;
     //spotless:on
 
     public static void register() {
-        CCKArmInteractionPointTypes.register(COOKING_POT, CookingPotArmInteractionPoint.Type::new);
-        CCKArmInteractionPointTypes.register(CUTTING_BOARD, CuttingBoardArmInteractionPoint.Type::new);
-        CCKArmInteractionPointTypes.register(PORTIONABLE_FOOD, PortionableFoodArmInteractionPoint.Type::new);
-        CCKArmInteractionPointTypes.register(SKILLET, SkilletArmInteractionPoint.Type::new);
-        CCKArmInteractionPointTypes.register(STOVE, StoveArmInteractionPoint.Type::new);
+        COOKING_POT = CCKArmInteractionPointTypes.register("cooking_pot", new CookingPotArmInteractionPoint.Type());
+        CUTTING_BOARD = CCKArmInteractionPointTypes.register("cutting_board", new CuttingBoardArmInteractionPoint.Type());
+        PORTIONABLE_FOOD = CCKArmInteractionPointTypes.register("portionable_food", new PortionableFoodArmInteractionPoint.Type());
+        SKILLET = CCKArmInteractionPointTypes.register("skillet", new SkilletArmInteractionPoint.Type());
+        STOVE = CCKArmInteractionPointTypes.register("stove", new StoveArmInteractionPoint.Type());
     }
 }

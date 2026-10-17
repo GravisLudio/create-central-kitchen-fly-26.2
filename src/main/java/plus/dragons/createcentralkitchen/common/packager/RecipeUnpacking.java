@@ -243,10 +243,10 @@ final class RecipeUnpacking {
                     return false;
                 if (addition.isEmpty())
                     continue;
-                int limit = inventory.getMaxStackSize(addition);
+                // countSpace/insert work on a slot range (here a single slot) and let the machine's own storage decide
+                // what it accepts, which also covers wrappers around Fabric Transfer storages.
                 if ((!existing.isEmpty() && !ItemStack.isSameItemSameComponents(existing, addition))
-                        || (long) existing.getCount() + addition.getCount() > limit
-                        || !inventory.canPlaceItem(start + i, addition))
+                        || inventory.countSpace(addition.copy(), addition.getCount(), start + i, start + i + 1) < addition.getCount())
                     return false;
             }
             if (!simulate) {
@@ -254,13 +254,9 @@ final class RecipeUnpacking {
                     var addition = additions.get(i);
                     if (addition.isEmpty())
                         continue;
-                    var existing = inventory.getItem(start + i);
-                    if (existing.isEmpty())
-                        inventory.setItem(start + i, addition.copy());
-                    else
-                        inventory.setItem(start + i, existing.copyWithCount(existing.getCount() + addition.getCount()));
+                    // Every slot was checked above and nothing else runs in between.
+                    inventory.insert(addition.copy(), addition.getCount(), start + i, start + i + 1);
                 }
-                inventory.setChanged();
             }
             return true;
         }

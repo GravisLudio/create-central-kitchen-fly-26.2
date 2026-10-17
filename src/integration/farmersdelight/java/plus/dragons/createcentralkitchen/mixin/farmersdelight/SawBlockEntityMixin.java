@@ -18,55 +18,47 @@
 
 package plus.dragons.createcentralkitchen.mixin.farmersdelight;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import com.simibubi.create.AllRecipeTypes;
-import com.simibubi.create.content.kinetics.base.BlockBreakingKineticBlockEntity;
-import com.simibubi.create.content.kinetics.saw.SawBlockEntity;
-import com.simibubi.create.content.processing.recipe.ProcessingInventory;
-import com.simibubi.create.foundation.blockEntity.behaviour.filtering.FilteringBehaviour;
-import com.simibubi.create.foundation.recipe.RecipeConditions;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.zurrtum.create.content.kinetics.saw.SawBlockEntity;
+import com.zurrtum.create.foundation.recipe.RecipeFinder;
+import java.util.ArrayList;
 import java.util.List;
-import me.fallenbreath.conditionalmixin.api.annotation.Condition;
-import me.fallenbreath.conditionalmixin.api.annotation.Restriction;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.item.crafting.Recipe;
+import java.util.function.Predicate;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import plus.dragons.createcentralkitchen.config.CCKConfig;
-import plus.dragons.createcentralkitchen.integration.ModIntegration;
 import plus.dragons.createcentralkitchen.integration.farmersdelight.recipe.CuttingBoardRecipeConverters;
-import vectorwing.farmersdelight.common.registry.ModRecipeTypes;
 
-@Restriction(require = @Condition(ModIntegration.Mods.FARMERSDELIGHT))
+/**
+ * Adds the Cutting Board recipes that accept an iron knife to the list of recipes a saw can run. Create caches that
+ * list, so the merged list is cached too (by the identity of Create's list, which changes on every reload).
+ */
 @Mixin(SawBlockEntity.class)
-public abstract class SawBlockEntityMixin extends BlockBreakingKineticBlockEntity {
-    @Shadow
-    public ProcessingInventory inventory;
+public abstract class SawBlockEntityMixin {
+    private record Merged(List<?> sawing, List<RecipeHolder<?>> recipes) {}
 
-    @Shadow
-    private FilteringBehaviour filtering;
+    private static final Cache<List<RecipeHolder<?>>, Merged> MERGED = CacheBuilder.newBuilder().weakKeys().build();
 
-    public SawBlockEntityMixin(BlockEntityType<?> type, BlockPos pos, BlockState state) {
-        super(type, pos, state);
-    }
-
-    @ModifyReturnValue(method = "getRecipes", at = @At("TAIL"))
-    private List<RecipeHolder<? extends Recipe<?>>> addCuttingBoardRecipe(List<RecipeHolder<? extends Recipe<?>>> recipes) {
-        if (CCKConfig.recipes().convertCuttingBoardRecipesToSawingRecipes.get()) {
-            var input = CuttingBoardRecipeConverters.sawInput(inventory.getStackInSlot(0));
-            assert level != null;
-            level.getRecipeManager()
-                    .getRecipesFor(ModRecipeTypes.CUTTING.get(), input, level)
-                    .stream()
-                    .filter(AllRecipeTypes.CAN_BE_AUTOMATED)
-                    .map(CuttingBoardRecipeConverters.SAWING)
-                    .filter(RecipeConditions.outputMatchesFilter(filtering))
-                    .forEach(recipes::add);
-        }
-        return recipes;
+    @WrapOperation(method = "updateRecipe", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/foundation/recipe/RecipeFinder;get(Ljava/lang/Object;Lnet/minecraft/server/level/ServerLevel;Ljava/util/function/Predicate;)Ljava/util/List;"))
+    private List<RecipeHolder<?>> addCuttingBoardRecipes(Object cacheKey, ServerLevel level, Predicate<RecipeHolder<?>> conditions, Operation<List<RecipeHolder<?>>> original) {
+        var found = original.call(cacheKey, level, conditions);
+        if (!CCKConfig.recipes().convertCuttingBoardRecipesToSawingRecipes.get())
+            return found;
+        var sawing = CuttingBoardRecipeConverters.index(level.recipeAccess()).sawing();
+        if (sawing.isEmpty())
+            return found;
+        var cached = MERGED.getIfPresent(found);
+        if (cached != null && cached.sawing() == sawing)
+            return cached.recipes();
+        var merged = new ArrayList<RecipeHolder<?>>(found);
+        merged.addAll(sawing);
+        var result = List.copyOf(merged);
+        MERGED.put(found, new Merged(sawing, result));
+        return result;
     }
 }

@@ -27,7 +27,7 @@
     ]
   },
   "mixins": [
-    "create_central_kitchen.mixins.json"
+    "create_central_kitchen.mixins.json"${integration_mixin_entries}
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",

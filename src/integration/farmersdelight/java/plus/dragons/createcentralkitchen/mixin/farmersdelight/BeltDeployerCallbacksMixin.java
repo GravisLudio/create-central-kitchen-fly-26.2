@@ -20,20 +20,16 @@ package plus.dragons.createcentralkitchen.mixin.farmersdelight;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.simibubi.create.content.kinetics.deployer.BeltDeployerCallbacks;
-import me.fallenbreath.conditionalmixin.api.annotation.Condition;
-import me.fallenbreath.conditionalmixin.api.annotation.Restriction;
+import com.zurrtum.create.content.kinetics.deployer.BeltDeployerCallbacks;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import plus.dragons.createcentralkitchen.integration.ModIntegration;
 import plus.dragons.createcentralkitchen.integration.farmersdelight.recipe.CuttingBoardDeployerRecipe;
 
-@Restriction(require = @Condition(ModIntegration.Mods.FARMERSDELIGHT))
 @Mixin(BeltDeployerCallbacks.class)
 public class BeltDeployerCallbacksMixin {
-    @ModifyExpressionValue(method = "activate", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/kinetics/deployer/ItemApplicationRecipe;shouldKeepHeldItem()Z"))
+    @ModifyExpressionValue(method = "activate", at = @At(value = "INVOKE", target = "Lcom/zurrtum/create/content/kinetics/deployer/ItemApplicationRecipe;keepHeldItem()Z"))
     private static boolean keepNonDamageableCuttingTool(
             boolean original,
             @Local(argsOnly = true) Recipe<?> recipe,

@@ -18,60 +18,26 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight;
 
-import com.simibubi.create.api.packager.unpacking.UnpackingHandler;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.neoforge.common.NeoForge;
-import plus.dragons.createcentralkitchen.common.CCKCommon;
-import plus.dragons.createcentralkitchen.integration.ModIntegration;
-import plus.dragons.createcentralkitchen.integration.farmersdelight.burner.BlazeChefRenderOverrides;
-import plus.dragons.createcentralkitchen.integration.farmersdelight.data.FDTagsProvider;
+import com.zurrtum.create.api.packager.unpacking.UnpackingHandler;
 import plus.dragons.createcentralkitchen.integration.farmersdelight.packager.CookingPotUnpackingHandler;
-import plus.dragons.createcentralkitchen.integration.farmersdelight.ponder.FDPonderPlugin;
 import plus.dragons.createcentralkitchen.integration.farmersdelight.recipe.CuttingBoardRecipeConverters;
 import plus.dragons.createcentralkitchen.integration.farmersdelight.registry.FDArmInteractionPointTypes;
 import vectorwing.farmersdelight.common.registry.ModBlockEntityTypes;
 
-@Mod(CCKCommon.ID)
-public class FDIntegration {
-    public FDIntegration(IEventBus modBus) {
-        if (ModIntegration.FARMERSDELIGHT.enabled()) {
-            modBus.register(new Common());
-            if (FMLLoader.getDist() == Dist.CLIENT)
-                modBus.register(new Client());
-        }
-    }
+/**
+ * Entry point of the Farmer's Delight integration. {@code CCKCommon} calls {@link #init()} only when Farmer's
+ * Delight is loaded, so nothing here is touched without it.
+ */
+public final class FDIntegration {
+    private FDIntegration() {}
 
-    public static class Common {
-        @SubscribeEvent
-        public void construct(final FMLConstructModEvent event) {
-            FDArmInteractionPointTypes.register();
-            FDTagsProvider.register();
-            NeoForge.EVENT_BUS.register(CuttingBoardRecipeConverters.class);
-        }
-
-        @SubscribeEvent
-        public void setup(final FMLCommonSetupEvent event) {
-            event.enqueueWork(this::registerUnpackingHandlers);
-        }
-
-        private void registerUnpackingHandlers() {
-            ModBlockEntityTypes.COOKING_POT.get()
-                    .getValidBlocks()
-                    .forEach(block -> UnpackingHandler.REGISTRY.register(block, new CookingPotUnpackingHandler()));
-        }
-    }
-
-    public static class Client {
-        @SubscribeEvent
-        public void construct(final FMLConstructModEvent event) {
-            BlazeChefRenderOverrides.registerDefaults();
-            FDPonderPlugin.register();
-        }
+    public static void init() {
+        FDArmInteractionPointTypes.register();
+        CuttingBoardRecipeConverters.register();
+        // A provider is asked lazily, after every mod has registered its blocks, so the order of mod
+        // initialization does not matter.
+        var cookingPot = new CookingPotUnpackingHandler();
+        UnpackingHandler.REGISTRY.registerProvider(block ->
+                ModBlockEntityTypes.COOKING_POT.get().isValid(block.defaultBlockState()) ? cookingPot : null);
     }
 }

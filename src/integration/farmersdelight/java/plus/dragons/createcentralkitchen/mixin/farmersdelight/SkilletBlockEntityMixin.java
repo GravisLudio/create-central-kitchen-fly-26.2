@@ -19,11 +19,10 @@
 package plus.dragons.createcentralkitchen.mixin.farmersdelight;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.simibubi.create.api.boiler.BoilerHeater;
+import com.zurrtum.create.api.boiler.BoilerHeater;
 import java.util.Optional;
-import me.fallenbreath.conditionalmixin.api.annotation.Condition;
-import me.fallenbreath.conditionalmixin.api.annotation.Restriction;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CampfireCookingRecipe;
@@ -31,21 +30,19 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.items.ItemStackHandler;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import plus.dragons.createcentralkitchen.access.farmersdelight.SkilletBlockEntityAccess;
-import plus.dragons.createcentralkitchen.integration.ModIntegration;
 import vectorwing.farmersdelight.common.block.SkilletBlock;
 import vectorwing.farmersdelight.common.block.entity.HeatableBlockEntity;
 import vectorwing.farmersdelight.common.block.entity.SkilletBlockEntity;
 import vectorwing.farmersdelight.common.block.entity.SyncedBlockEntity;
 import vectorwing.farmersdelight.common.registry.ModSounds;
 import vectorwing.farmersdelight.common.tag.ModTags;
+import vectorwing.farmersdelight.refabricated.inventory.ItemStackHandler;
 
-@Restriction(require = @Condition(ModIntegration.Mods.FARMERSDELIGHT))
 @Mixin(SkilletBlockEntity.class)
 public abstract class SkilletBlockEntityMixin extends SyncedBlockEntity implements HeatableBlockEntity,
         SkilletBlockEntityAccess {
@@ -64,14 +61,16 @@ public abstract class SkilletBlockEntityMixin extends SyncedBlockEntity implemen
     }
 
     @Shadow
-    protected abstract Optional<RecipeHolder<CampfireCookingRecipe>> getMatchingRecipe(ItemStack stack);
+    protected abstract Optional<RecipeHolder<CampfireCookingRecipe>> getMatchingRecipe(ItemStack stack, ServerLevel level);
 
     @Shadow
     public abstract ItemStack getStoredStack();
 
     @Override
     public ItemStack addItemToCook(ItemStack stack, boolean simulate) {
-        Optional<RecipeHolder<CampfireCookingRecipe>> recipe = this.getMatchingRecipe(stack);
+        if (!(this.level instanceof ServerLevel serverLevel))
+            return stack;
+        Optional<RecipeHolder<CampfireCookingRecipe>> recipe = this.getMatchingRecipe(stack, serverLevel);
         if (recipe.isPresent() && this.getStoredStack().isEmpty()) {
             if (this.getBlockState().getValue(SkilletBlock.WATERLOGGED))
                 return stack;
@@ -79,10 +78,10 @@ public abstract class SkilletBlockEntityMixin extends SyncedBlockEntity implemen
             ItemStack remainder = this.inventory.insertItem(0, stack.copy(), simulate);
             if (!ItemStack.matches(remainder, stack)) {
                 if (!simulate) {
-                    this.cookingTimeTotal = SkilletBlock.getSkilletCookingTime(recipe.get().value().getCookingTime(), this.fireAspectLevel);
+                    this.cookingTimeTotal = SkilletBlock.getSkilletCookingTime(recipe.get().value().cookingTime(), this.fireAspectLevel);
                     this.cookingTime = 0;
-                    if (wasEmpty && this.level != null && this.isHeated(this.level, this.worldPosition)) {
-                        this.level.playSound(null, this.worldPosition.getX() + 0.5F, this.worldPosition.getY() + 0.5F, this.worldPosition.getZ() + 0.5F, ModSounds.BLOCK_SKILLET_ADD_FOOD.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
+                    if (wasEmpty && this.isHeated(serverLevel, this.worldPosition)) {
+                        serverLevel.playSound(null, this.worldPosition.getX() + 0.5F, this.worldPosition.getY() + 0.5F, this.worldPosition.getZ() + 0.5F, ModSounds.BLOCK_SKILLET_ADD_FOOD.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
                     }
                 }
                 return remainder;
@@ -92,7 +91,7 @@ public abstract class SkilletBlockEntityMixin extends SyncedBlockEntity implemen
     }
 
     @ModifyExpressionValue(method = "cookAndOutputItems", at = @At(value = "FIELD", target = "Lvectorwing/farmersdelight/common/block/entity/SkilletBlockEntity;cookingTime:I", ordinal = 0))
-    private int speedUpCooking(int cookTime, ItemStack cookingStack, Level level) {
+    private int speedUpCooking(int cookTime, ItemStack cookingStack, ServerLevel level) {
         var pos = this.getBlockPos();
         var heaterPos = pos.below();
         var heaterState = level.getBlockState(heaterPos);

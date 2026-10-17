@@ -18,12 +18,12 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.packager;
 
+import com.zurrtum.create.foundation.item.ItemHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.Container;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
-import net.neoforged.neoforge.items.IItemHandler;
 import org.jetbrains.annotations.Nullable;
 import plus.dragons.createcentralkitchen.common.packager.ShapelessUnpackingHandler;
 import vectorwing.farmersdelight.common.registry.ModRecipeTypes;
@@ -34,8 +34,12 @@ public class CookingPotUnpackingHandler extends ShapelessUnpackingHandler {
     }
 
     @Override
-    protected @Nullable IItemHandler getInventory(Level level, BlockPos pos, Direction side) {
-        return level.getCapability(ItemHandler.BLOCK, pos, Direction.UP);
+    protected @Nullable Container getInventory(Level level, BlockPos pos, Direction side) {
+        var blockEntity = level.getBlockEntity(pos);
+        if (blockEntity == null)
+            return null;
+        // The side the pot exposes to a packager above it (the same face the NeoForge build asked for).
+        return ItemHelper.getInventory(level, pos, level.getBlockState(pos), blockEntity, Direction.UP);
     }
 
     @Override

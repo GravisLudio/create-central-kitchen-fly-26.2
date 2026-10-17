@@ -18,10 +18,10 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.mechanicalArm;
 
-import com.simibubi.create.content.kinetics.mechanicalArm.AllArmInteractionPointTypes.DepositOnlyArmInteractionPoint;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmBlockEntity;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
+import com.zurrtum.create.content.kinetics.mechanicalArm.AllArmInteractionPointTypes.DepositOnlyArmInteractionPoint;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmBlockEntity;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -40,7 +40,7 @@ public class StoveArmInteractionPoint extends DepositOnlyArmInteractionPoint {
     public ItemStack insert(ArmBlockEntity armBlockEntity, ItemStack stack, boolean simulate) {
         if (level.getBlockEntity(pos) instanceof AbstractStoveBlockEntity stove) {
             int slot = stove.getNextEmptySlot();
-            if (slot < 0 || slot >= stove.getItems().getSlots() || isStoveBlockedAbove(stove)) {
+            if (slot < 0 || slot >= stove.getItems().getSlotCount() || isStoveBlockedAbove(stove)) {
                 return stack;
             }
             var recipe = stove.getCookingRecipe(stack);

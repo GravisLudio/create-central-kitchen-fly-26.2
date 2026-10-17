@@ -64,7 +64,13 @@ def notPortedYet = [
         'plus/dragons/createcentralkitchen/integration/jei/**',       // plugin de JEI
         'plus/dragons/createcentralkitchen/common/gametest/**',       // GameTests de NeoForge
         'plus/dragons/createcentralkitchen/data/CCKLang.java',        // LangBuilder es solo de cliente en Create Fly
-        'plus/dragons/createcentralkitchen/mixin/UniversalConditionalMixinPlugin.java' // conditional-mixin no existe en Fabric
+        'plus/dragons/createcentralkitchen/mixin/UniversalConditionalMixinPlugin.java', // sustituido por ModLoadedMixinPlugin
+        // Integracion de Farmer's Delight: la parte de cliente sigue pendiente (F1c)
+        'plus/dragons/createcentralkitchen/integration/farmersdelight/burner/**',
+        'plus/dragons/createcentralkitchen/integration/farmersdelight/ponder/**',
+        'plus/dragons/createcentralkitchen/integration/farmersdelight/FarmersDelightRecipeGameTests.java', // GameTests de NeoForge
+        'plus/dragons/createcentralkitchen/mixin/farmersdelight/CCKJeiPluginMixin.java',
+        'plus/dragons/createcentralkitchen/mixin/farmersdelight/client/**'
 ]
 
 sourceSets {
@@ -76,6 +82,7 @@ sourceSets {
         create(name) {
             java {
                 srcDir "src/integration/${name}/java"
+                exclude notPortedYet
             }
             resources {
                 srcDir "src/integration/${name}/resources"
@@ -221,6 +228,11 @@ dependencies {
 
     if (hasIntegration("farmersdelight")) {
         farmersdelightCompileOnly("maven.modrinth:farmers-delight-refabricated:${farmers_delight_version}") { transitive = false }
+        // Los block entities de FD implementan ExtendedMenuProvider (fabric-menu-api); sin el modulo javac no puede leer las clases de FD.
+        farmersdelightCompileOnly fabricApi.module("fabric-menu-api-v1", fabric_api_version)
+        // Las pruebas de servidor miran los bloques y recetas reales de FD.
+        gametestCompileOnly("maven.modrinth:farmers-delight-refabricated:${farmers_delight_version}") { transitive = false }
+        gametestCompileOnly fabricApi.module("fabric-menu-api-v1", fabric_api_version)
         runtimeOnly("maven.modrinth:farmers-delight-refabricated:${farmers_delight_version}") { transitive = false }
     }
 
@@ -240,8 +252,16 @@ processResources {
     inputs.property 'minecraft_version_range', minecraft_version_range
     inputs.property 'jei_version', jei_version
 
+    // Configuraciones de mixins de las integraciones activas que las tengan.
+    def integrationMixinEntries = enabledIntegrationSourceSets
+            .findAll { file("src/integration/${it}/resources/create_central_kitchen.${it}.mixins.json").exists() }
+            .collect { ', "create_central_kitchen.' + it + '.mixins.json"' }
+            .join('')
+    inputs.property 'integration_mixin_entries', integrationMixinEntries
+
     filesMatching('fabric.mod.json') {
         expand(
+                integration_mixin_entries: integrationMixinEntries,
                 version: project.version,
                 loader_version: loader_version,
                 fabric_api_version: fabric_api_version,

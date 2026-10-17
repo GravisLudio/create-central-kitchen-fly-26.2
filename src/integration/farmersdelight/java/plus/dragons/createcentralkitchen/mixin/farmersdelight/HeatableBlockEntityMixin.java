@@ -19,9 +19,7 @@
 package plus.dragons.createcentralkitchen.mixin.farmersdelight;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import com.simibubi.create.api.boiler.BoilerHeater;
-import me.fallenbreath.conditionalmixin.api.annotation.Condition;
-import me.fallenbreath.conditionalmixin.api.annotation.Restriction;
+import com.zurrtum.create.api.boiler.BoilerHeater;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -29,12 +27,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import plus.dragons.createcentralkitchen.integration.ModIntegration;
 import vectorwing.farmersdelight.common.block.entity.HeatableBlockEntity;
 import vectorwing.farmersdelight.common.tag.ModTags;
 
-@Restriction(require = @Condition(ModIntegration.Mods.FARMERSDELIGHT))
-@Mixin(value = HeatableBlockEntity.class, remap = false)
+@Mixin(HeatableBlockEntity.class)
 public interface HeatableBlockEntityMixin {
     @Inject(method = "isHeated", at = @At(value = "FIELD", target = "Lvectorwing/farmersdelight/common/tag/ModTags$Blocks;HEAT_SOURCES:Lnet/minecraft/tags/TagKey;", ordinal = 0), cancellable = true)
     private void isHeatedByBoilerHeaterBelow(Level level, BlockPos pos, CallbackInfoReturnable<Boolean> cir, @Local(ordinal = 0) BlockState stateBelow) {

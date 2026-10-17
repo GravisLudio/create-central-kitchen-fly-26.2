@@ -18,9 +18,9 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.mechanicalArm;
 
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmBlockEntity;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmBlockEntity;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;

@@ -18,20 +18,21 @@
 
 package plus.dragons.createcentralkitchen.integration.farmersdelight.recipe;
 
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.simibubi.create.AllRecipeTypes;
-import com.simibubi.create.content.kinetics.deployer.DeployerApplicationRecipe;
-import com.simibubi.create.content.kinetics.deployer.DeployerRecipeSearchEvent;
-import com.simibubi.create.content.kinetics.deployer.ItemApplicationRecipe;
-import com.simibubi.create.content.kinetics.saw.CuttingRecipe;
-import com.simibubi.create.content.processing.recipe.StandardProcessingRecipe;
+import com.zurrtum.create.AllRecipeTypes;
+import com.zurrtum.create.content.kinetics.saw.CuttingRecipe;
+import com.zurrtum.create.content.processing.recipe.ProcessingOutput;
+import java.util.List;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.neoforged.bus.api.SubscribeEvent;
-import plus.dragons.createcentralkitchen.config.CCKConfig;
+import net.minecraft.world.item.crafting.RecipeManager;
 import plus.dragons.createdragonsplus.common.recipe.RecipeConverter;
+import plus.dragons.createdragonsplus.common.recipe.UpdateRecipesEvent;
 import vectorwing.farmersdelight.common.crafting.CuttingBoardRecipe;
-import vectorwing.farmersdelight.common.crafting.CuttingBoardRecipeInput;
 import vectorwing.farmersdelight.common.registry.ModItems;
 import vectorwing.farmersdelight.common.registry.ModRecipeTypes;
 
@@ -41,53 +42,62 @@ public class CuttingBoardRecipeConverters {
     public static final RecipeConverter<CuttingBoardRecipe, CuttingRecipe> SAWING = RecipeConverter.cached(
             CacheBuilder.newBuilder(), holder -> {
                 var recipe = holder.value();
-                var id = holder.id().withSuffix("_using_saw");
-                var builder = new StandardProcessingRecipe.Builder<>(CuttingRecipe::new, id)
-                        .require(recipe.getIngredients().getFirst())
-                        .duration(SAWING_DURATION);
-                for (var result : recipe.getRollableResults())
-                    builder.output(result.chance(), result.stack());
-                return new RecipeHolder<>(id, builder.build());
+                return new RecipeHolder<>(derivedId(holder, "_using_saw"),
+                        new CuttingRecipe(SAWING_DURATION, outputs(recipe), recipe.getInput()));
             });
-    public static final RecipeConverter<CuttingBoardRecipe, DeployerApplicationRecipe> DEPLOYING = RecipeConverter.cached(
+
+    public static final RecipeConverter<CuttingBoardRecipe, CuttingBoardDeployerRecipe> DEPLOYING = RecipeConverter.cached(
             CacheBuilder.newBuilder(), holder -> {
                 var recipe = holder.value();
-                var id = holder.id().withSuffix("_using_deployer");
-                var builder = new ItemApplicationRecipe.Builder<>(CuttingBoardDeployerRecipe::new, id)
-                        .require(recipe.getIngredients().getFirst())
-                        .require(recipe.getTool())
-                        .toolNotConsumed();
-                for (var result : recipe.getRollableResults())
-                    builder.output(result.chance(), result.stack());
-                return new RecipeHolder<DeployerApplicationRecipe>(id, builder.build());
+                // The deployer keeps its tool: a knife wears down only if it is damageable (see CuttingBoardDeployerRecipe).
+                return new RecipeHolder<>(derivedId(holder, "_using_deployer"),
+                        new CuttingBoardDeployerRecipe(outputs(recipe), true, recipe.getInput(), recipe.getTool()));
             });
+
+    /** Everything derived from one RecipeManager, computed once per reload. */
+    public record Index(List<RecipeHolder<CuttingBoardRecipe>> cutting,
+            List<RecipeHolder<CuttingRecipe>> sawing,
+            List<RecipeHolder<CuttingBoardDeployerRecipe>> deploying) {}
+
+    private static final Cache<RecipeManager, Index> INDEXES = CacheBuilder.newBuilder().weakKeys().build();
+
+    /** Drops the cached indexes whenever recipes or tags are reloaded. */
+    public static void register() {
+        UpdateRecipesEvent.EVENT.register(event -> INDEXES.invalidateAll());
+    }
+
+    public static Index index(RecipeManager manager) {
+        return INDEXES.asMap().computeIfAbsent(manager, CuttingBoardRecipeConverters::buildIndex);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Index buildIndex(RecipeManager manager) {
+        var cutting = manager.getRecipes().stream()
+                .filter(holder -> holder.value().getType() == ModRecipeTypes.CUTTING.get())
+                .map(holder -> (RecipeHolder<CuttingBoardRecipe>) holder)
+                .toList();
+        var automated = cutting.stream().filter(AllRecipeTypes.CAN_BE_AUTOMATED).toList();
+        var sawing = automated.stream().filter(CuttingBoardRecipeConverters::canSaw).map(SAWING).toList();
+        var deploying = automated.stream().map(DEPLOYING).toList();
+        return new Index(cutting, sawing, deploying);
+    }
+
+    private static ResourceKey<Recipe<?>> derivedId(RecipeHolder<CuttingBoardRecipe> holder, String suffix) {
+        return ResourceKey.create(Registries.RECIPE, holder.id().identifier().withSuffix(suffix));
+    }
+
+    private static List<ProcessingOutput> outputs(CuttingBoardRecipe recipe) {
+        return recipe.getRollableResults().stream()
+                .map(result -> new ProcessingOutput(result.stack().item(), result.stack().count(),
+                        result.stack().components(), result.chance()))
+                .toList();
+    }
 
     public static ItemStack sawAsKnife() {
         return new ItemStack(ModItems.IRON_KNIFE.get());
     }
 
-    public static CuttingBoardRecipeInput sawInput(ItemStack input) {
-        return new CuttingBoardRecipeInput(input, sawAsKnife());
-    }
-
     public static boolean canSaw(RecipeHolder<CuttingBoardRecipe> holder) {
         return holder.value().getTool().test(sawAsKnife());
-    }
-
-    @SubscribeEvent
-    public static void onDeployerRecipeSearch(final DeployerRecipeSearchEvent event) {
-        if (CCKConfig.recipes().convertCuttingBoardRecipesToDeployingRecipes.get()) {
-            var deployer = event.getBlockEntity();
-            var inventory = event.getInventory();
-            var level = deployer.getLevel();
-            assert level != null;
-            event.addRecipe(() -> level.getRecipeManager()
-                    .getAllRecipesFor(ModRecipeTypes.CUTTING.get())
-                    .stream()
-                    .filter(AllRecipeTypes.CAN_BE_AUTOMATED)
-                    .map(CuttingBoardRecipeConverters.DEPLOYING)
-                    .filter(holder -> holder.value().matches(inventory, level))
-                    .findFirst(), 50);
-        }
     }
 }
