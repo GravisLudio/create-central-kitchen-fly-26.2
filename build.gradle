@@ -155,6 +155,17 @@ loom {
             vmArg "-Dfabric-api.gametest.report-file=${project.file('build/gametest/report.xml')}"
             runDir 'build/gametest'
         }
+        // `gradlew runClientGameTest`: abre Minecraft REAL (con ventana), crea un mundo, juega solo y saca capturas a
+        // build/run/clientGameTest/screenshots. Es lo mismo que hace `fabricApi.configureTests` en el Loom oficial, que
+        // este Loom (Architectury) no tiene. NO lanzar con Gravis jugando: usar herramientas\probar-cliente.ps1.
+        clientGameTest {
+            client()
+            name 'Client Game Test'
+            source sourceSets.gametest
+            vmArg '-Dfabric.client.gametest'
+            vmArg '-Xmx2G'
+            runDir 'build/run/clientGameTest'
+        }
     }
 }
 
@@ -230,6 +241,8 @@ dependencies {
 
     // No forma parte del bundle fabric-api: es un modulo solo de desarrollo.
     gametestImplementation fabricApi.module("fabric-gametest-api-v1", fabric_api_version)
+    // Prueba de cliente con capturas (runClientGameTest). Tambien solo de desarrollo.
+    gametestImplementation fabricApi.module("fabric-client-gametest-api-v1", fabric_api_version)
 
     testImplementation platform("org.junit:junit-bom:${junit_version}")
     testImplementation 'org.junit.jupiter:junit-jupiter'

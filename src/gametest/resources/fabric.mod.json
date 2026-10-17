@@ -8,6 +8,12 @@
     "fabric-gametest": [
       "plus.dragons.createcentralkitchen.gametest.CoreTests",
       "plus.dragons.createcentralkitchen.gametest.FarmersDelightTests"
+    ],
+    "fabric-client-gametest": [
+      "plus.dragons.createcentralkitchen.gametest.CentralKitchenClientTests"
+    ],
+    "jei_mod_plugin": [
+      "plus.dragons.createcentralkitchen.gametest.ClientTestJeiPlugin"
     ]
   },
   "depends": {
