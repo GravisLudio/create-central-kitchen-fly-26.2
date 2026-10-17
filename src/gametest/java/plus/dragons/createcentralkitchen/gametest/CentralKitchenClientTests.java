@@ -8,10 +8,14 @@ import com.zurrtum.create.content.kinetics.deployer.DeployerBlockEntity;
 import com.zurrtum.create.content.processing.burner.BlazeBurnerBlock;
 import com.zurrtum.create.content.processing.burner.BlazeBurnerBlock.HeatLevel;
 import com.zurrtum.create.content.processing.burner.BlazeBurnerBlockEntity;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import javax.imageio.ImageIO;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
@@ -60,17 +64,24 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
     private static final Identifier CUTTING_BOARD = Identifier.fromNamespaceAndPath("farmersdelight", "cutting_board");
     private static final Identifier IRON_KNIFE = Identifier.fromNamespaceAndPath("farmersdelight", "iron_knife");
 
+    /**
+     * Recording mode (environment variable {@code CCK_TEST_RECORD}, set by {@code probar-cliente.ps1 -Grabacion}): the HUD
+     * stays on so the captions show, and each key shot is held for a few seconds with a caption saying what is checked.
+     */
+    private static final boolean RECORD = System.getenv("CCK_TEST_RECORD") != null;
+    private static final int HOLD_TICKS = 80;
+
     private final List<String> failures = new ArrayList<>();
 
     /** What each blaze burner of the row has above it and what the mod should do about it. */
-    private record BurnerCase(String name, int x, boolean hat) {}
+    private record BurnerCase(String name, int x, boolean hat, String caption) {}
 
     private static final List<BurnerCase> BURNERS = List.of(
-            new BurnerCase("control-nothing-above", -4, false),
-            new BurnerCase("cooking-pot", -2, true),
-            new BurnerCase("skillet", 0, true),
-            new BurnerCase("chute-then-pot", 2, true),
-            new BurnerCase("stone-above", 4, false));
+            new BurnerCase("control-nothing-above", -4, false, "Sin nada encima: cabeza baja y sin sombrero"),
+            new BurnerCase("cooking-pot", -2, true, "Bajo una olla de Farmer's Delight: cabeza levantada y sombrero de chef"),
+            new BurnerCase("skillet", 0, true, "Bajo una sartén: también sombrero de chef"),
+            new BurnerCase("chute-then-pot", 2, true, "Con una tolva en medio, el calor pasa y sale el sombrero"),
+            new BurnerCase("stone-above", 4, false, "Bajo una piedra: no cambia nada"));
 
     @FunctionalInterface
     private interface Step {
@@ -79,13 +90,13 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
 
     @Override
     public void runTest(ClientGameTestContext context) {
-        log("backend of Create's renderer: " + flywheelBackend());
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
             TestServerContext server = singleplayer.getServer();
             context.waitTicks(40);
             context.getInput().resizeWindow(1280, 760);
+            server.runCommand("gamerule send_command_feedback false");   // no chat lines over the picture
             context.runOnClient(mc -> {
-                if (!mc.gui.hud.isHidden())
+                if (!RECORD && !mc.gui.hud.isHidden())
                     mc.gui.hud.toggle();   // same as pressing F1
                 mc.options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0);
             });
@@ -95,6 +106,9 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
             server.runCommand("weather clear");
             buildPlatform(server);
             context.waitTicks(20);
+            // Flywheel only picks its backend when a level is loaded: asking at the title screen says "simple" always.
+            log("backend of Create's renderer inside the world: " + flywheelBackend());
+            log("recording mode: " + RECORD);
 
             step("blaze burners", () -> burners(context, server));
             step("deployers", () -> deployers(context, server));
@@ -170,17 +184,34 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
         // Photos: the whole row, then each case close up from the same angle so they can be compared one by one.
         look(server, 0.5, 203.0, 7.0, 0.5, 202.0, BURNER_Z + 0.5);
         context.waitTicks(20);
-        context.takeScreenshot("burners-row");
+        shot(context, server, "burners-row", "Blaze Burners con Central Kitchen: solo, olla, sartén, tolva + olla y piedra");
         for (BurnerCase c : BURNERS) {
             feedBurners(server);
             look(server, c.x() + 0.5 + 1.6, 202.4, BURNER_Z + 3.0, c.x() + 0.5, 201.7, BURNER_Z + 0.5);
             context.waitTicks(15);
-            context.takeScreenshot("burner-" + c.name());
+            Path picture = shot(context, server, "burner-" + c.name(), c.caption());
+            if (!RECORD) {
+                // The chef hat is light neutral grey (222) and nothing else around a burner is: count those pixels at the
+                // centre of the picture, where the head is. Measured in the first real run: 285-414 with a hat, 0 without.
+                int hatPixels = hatPixels(picture);
+                log("burner " + c.name() + ": " + hatPixels + " pixels of the chef hat's colour");
+                expect(c.hat() ? hatPixels >= 100 : hatPixels <= 5,
+                        "burner " + c.name() + ": " + hatPixels + " hat-coloured pixels, expected " + (c.hat() ? "100 or more" : "none"));
+            }
         }
         // Same pot seen from the front and from above, as a player would normally see it.
         look(server, -1.5, 204.3, BURNER_Z + 2.2, -1.5, 202.2, BURNER_Z + 0.5);
         context.waitTicks(15);
-        context.takeScreenshot("burner-cooking-pot-from-above");
+        shot(context, server, "burner-cooking-pot-from-above", "Vista desde arriba, como la vería un jugador");
+        // Side-on at the height of the blaze's head, 1.5 blocks away: the hat is the light grey slab on top of the head.
+        for (BurnerCase c : BURNERS) {
+            if (RECORD)
+                break;
+            feedBurners(server);
+            look(server, c.x() + 0.5, 201.9, BURNER_Z + 2.0, c.x() + 0.5, 201.9, BURNER_Z + 0.5);
+            context.waitTicks(15);
+            context.takeScreenshot("burner-side-" + c.name());
+        }
     }
 
     private static void set(ServerLevel level, int y, String name, Identifier blockId) {
@@ -233,12 +264,12 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
         ItemStack knife = new ItemStack(BuiltInRegistries.ITEM.getValue(IRON_KNIFE));
         ItemStack apple = new ItemStack(Items.APPLE);
         // x -> (mode, item)
-        record Case(String name, int x, DeployerBlockEntity.Mode mode, ItemStack item) {}
+        record Case(String name, int x, DeployerBlockEntity.Mode mode, ItemStack item, String caption) {}
         List<Case> cases = List.of(
-                new Case("use-pickaxe", -6, DeployerBlockEntity.Mode.USE, tool),
-                new Case("use-knife", -3, DeployerBlockEntity.Mode.USE, knife),
-                new Case("punch-pickaxe", 0, DeployerBlockEntity.Mode.PUNCH, tool),
-                new Case("use-apple", 3, DeployerBlockEntity.Mode.USE, apple));
+                new Case("use-pickaxe", -6, DeployerBlockEntity.Mode.USE, tool, "Deployer en modo uso con un pico: la herramienta se ve inclinada"),
+                new Case("use-knife", -3, DeployerBlockEntity.Mode.USE, knife, "Lo mismo con un cuchillo de Farmer's Delight"),
+                new Case("punch-pickaxe", 0, DeployerBlockEntity.Mode.PUNCH, tool, "En modo golpe se dibuja recto, como siempre"),
+                new Case("use-apple", 3, DeployerBlockEntity.Mode.USE, apple, "Lo que no es una herramienta no se inclina"));
 
         server.runOnServer(s -> {
             ServerLevel level = s.overworld();
@@ -290,11 +321,11 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
         for (Case c : cases) {
             look(server, c.x() + 2.3, 202.4, DEPLOYER_Z + 3.2, c.x() + 1.0, 201.5, DEPLOYER_Z + 0.5);
             context.waitTicks(15);
-            context.takeScreenshot("deployer-" + c.name());
+            shot(context, server, "deployer-" + c.name(), c.caption());
         }
         look(server, -1.5, 203.2, DEPLOYER_Z + 6.5, -1.5, 201.5, DEPLOYER_Z + 0.5);
         context.waitTicks(15);
-        context.takeScreenshot("deployers-row");
+        shot(context, server, "deployers-row", "Los cuatro deployers juntos");
     }
 
     // ------------------------------------------------------------------------------------------------------------
@@ -318,7 +349,9 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
         for (IRecipeType<?> type : types) {
             context.runOnClient(mc -> runtime.getRecipesGui().showTypes(List.<IRecipeType<?>>of(type)));
             context.waitTicks(30);
-            context.takeScreenshot("jei-" + type.getUid().getPath());
+            shot(context, server, "jei-" + type.getUid().getPath(), type == FDJeiExtension.SAWING
+                    ? "JEI: la sierra mecánica ahora corta lo que corta la tabla de corte"
+                    : "JEI: y el deployer con cuchillo, también");
         }
         context.setScreen(() -> null);
         context.waitTicks(5);
@@ -348,10 +381,10 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
                 context.waitTicks(20);
                 expect(context.computeOnClient(mc -> mc.gui.screen() instanceof PonderUI), "the Ponder screen of " + id + " did not open");
                 context.waitTicks(150);
-                context.takeScreenshot("ponder-" + id.getPath() + "-1");
+                shot(context, server, "ponder-" + id.getPath() + "-1", null);
                 context.getInput().pressKey(o -> o.keyRight);
                 context.waitTicks(150);
-                context.takeScreenshot("ponder-" + id.getPath() + "-2");
+                shot(context, server, "ponder-" + id.getPath() + "-2", null);
                 context.setScreen(() -> null);
                 context.waitTicks(5);
             });
@@ -361,6 +394,41 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
     // ------------------------------------------------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------------------------------------------------
+
+    /** Takes a screenshot; in recording mode first shows the caption (kept alive) for a few seconds. */
+    private static Path shot(ClientGameTestContext context, TestServerContext server, String name, String caption) {
+        if (RECORD && caption != null) {
+            for (int left = HOLD_TICKS; left > 0; left -= 40) {
+                caption(server, caption);
+                context.waitTicks(Math.min(40, left));
+            }
+        }
+        return context.takeScreenshot(name);
+    }
+
+    private static void caption(TestServerContext server, String text) {
+        try {
+            server.runCommand("title @a actionbar \"" + text.replace("\"", "'") + "\"");
+        } catch (RuntimeException e) {
+            log("could not show a caption: " + e);
+        }
+    }
+
+    /** Pixels of the chef hat's colour (light, neutral grey) in the middle of the picture, where a burner's head is. */
+    private static int hatPixels(Path picture) throws IOException {
+        BufferedImage image = ImageIO.read(picture.toFile());
+        int width = image.getWidth(), height = image.getHeight(), count = 0;
+        for (int x = width * 41 / 100; x < width * 59 / 100; x++) {
+            for (int y = height * 39 / 100; y < height * 63 / 100; y++) {
+                int rgb = image.getRGB(x, y);
+                int r = rgb >> 16 & 255, g = rgb >> 8 & 255, b = rgb & 255;
+                int max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
+                if (min > 165 && max - min < 14)
+                    count++;
+            }
+        }
+        return count;
+    }
 
     private static void buildPlatform(TestServerContext server) {
         server.runCommand("fill -12 201 -12 12 215 14 air");

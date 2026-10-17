@@ -1,7 +1,8 @@
 {
   "credit": "By RaymondBlaze, made with Blockbench",
   "textures": {
-    "hat": "create_central_kitchen:block/chef_hat_small"
+    "hat": "create_central_kitchen:block/chef_hat_small",
+    "particle": "create_central_kitchen:block/chef_hat_small"
   },
   "elements": [
     {
