@@ -25,14 +25,14 @@ import com.zurrtum.create.content.kinetics.saw.CuttingRecipe;
 import com.zurrtum.create.content.processing.recipe.ProcessingOutput;
 import java.util.Collection;
 import java.util.List;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
-import plus.dragons.createdragonsplus.common.recipe.RecipeConverter;
-import plus.dragons.createdragonsplus.common.recipe.UpdateRecipesEvent;
+import plus.dragons.createcentralkitchen.common.recipe.RecipeConverter;
 import vectorwing.farmersdelight.common.crafting.CuttingBoardRecipe;
 import vectorwing.farmersdelight.common.registry.ModItems;
 import vectorwing.farmersdelight.common.registry.ModRecipeTypes;
@@ -64,7 +64,7 @@ public class CuttingBoardRecipeConverters {
 
     /** Drops the cached indexes whenever recipes or tags are reloaded. */
     public static void register() {
-        UpdateRecipesEvent.EVENT.register(event -> INDEXES.invalidateAll());
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> INDEXES.invalidateAll());
     }
 
     public static Index index(RecipeManager manager) {

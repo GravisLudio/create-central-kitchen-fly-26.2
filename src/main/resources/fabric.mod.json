@@ -38,8 +38,7 @@
     "fabric-api": ">=${fabric_api_version}",
     "minecraft": "${minecraft_version_range}",
     "java": ">=25",
-    "create": "${create_version_range}",
-    "create_dragons_plus": "${create_dragons_plus_version_range}"
+    "create": "${create_version_range}"
   },
   "suggests": {
     "jei": "${jei_version}",

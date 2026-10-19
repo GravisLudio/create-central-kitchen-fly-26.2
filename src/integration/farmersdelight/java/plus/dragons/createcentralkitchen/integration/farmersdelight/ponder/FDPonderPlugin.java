@@ -25,10 +25,7 @@ import com.zurrtum.create.client.ponder.api.registration.PonderTagRegistrationHe
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import plus.dragons.createcentralkitchen.client.ponder.CCKPonderPlugin;
-import plus.dragons.createcentralkitchen.common.CCKCommon;
-import plus.dragons.createcentralkitchen.client.CCKLang;
 import plus.dragons.createcentralkitchen.integration.ModIntegration;
-import plus.dragons.createdragonsplus.client.ponder.PonderTagGroups;
 import vectorwing.farmersdelight.common.block.AbstractStoveBlock;
 import vectorwing.farmersdelight.common.block.FeastBlock;
 import vectorwing.farmersdelight.common.block.PieBlock;
@@ -84,12 +81,8 @@ public class FDPonderPlugin {
                 .add(SKILLET)
                 .add(MONSTER_POT);
         abstractStoves().forEach(armTargets::add);
-        var group = CCKCommon.asResource("portionable_foods");
-        PonderTagGroups.registerGroup(AllCreatePonderTags.ARM_TARGETS, group,
-                CCKLang.translate("ponder.group.portionable_foods").component(), -100);
-        PonderTagGroups.addToGroup(helper, AllCreatePonderTags.ARM_TARGETS, group)
-                .addHiddenAll(portionableFoods())
-                .addAll(wholePortionableFoods());
+        // Dragons Plus folds these into one carousel card; without its screen each feast and pie is listed on its own.
+        portionableFoods().forEach(armTargets::add);
     }
 
     private static List<Identifier> abstractStoves() {
@@ -108,19 +101,4 @@ public class FDPonderPlugin {
                 .toList();
     }
 
-    private static List<Identifier> wholePortionableFoods() {
-        return BuiltInRegistries.BLOCK.entrySet().stream()
-                .filter(entry -> {
-                    var block = entry.getValue();
-                    var state = block.defaultBlockState();
-                    if (block instanceof FeastBlock feast) {
-                        var servings = feast.getServingsProperty();
-                        return state.hasProperty(servings) && state.getValue(servings).equals(
-                                servings.getPossibleValues().stream().max(Integer::compareTo).orElse(0));
-                    }
-                    return block instanceof PieBlock && state.hasProperty(PieBlock.BITES) && state.getValue(PieBlock.BITES) == 0;
-                })
-                .map(entry -> entry.getKey().identifier())
-                .toList();
-    }
 }

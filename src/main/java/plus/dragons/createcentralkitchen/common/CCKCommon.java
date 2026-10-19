@@ -24,6 +24,7 @@ import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import plus.dragons.createcentralkitchen.common.packager.UnpackingRecipeCache;
+import plus.dragons.createcentralkitchen.common.recipe.RecipeConverter;
 import plus.dragons.createcentralkitchen.config.CCKConfig;
 import plus.dragons.createcentralkitchen.integration.ModIntegration;
 
@@ -42,6 +43,7 @@ public class CCKCommon implements ModInitializer {
     @Override
     public void onInitialize() {
         CCKConfig.registerCommon();
+        RecipeConverter.register();
         UnpackingRecipeCache.register();
         INTEGRATIONS.forEach((integration, className) -> {
             if (integration.enabled())

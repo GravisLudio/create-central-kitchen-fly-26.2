@@ -186,18 +186,6 @@ repositories {
             includeGroup 'maven.modrinth'
         }
     }
-    // Rama local p3 del port de Dragons Plus. Se regenera con herramientas\publicar-dragons-plus-local.ps1.
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = 'LocalPorts'
-                url = uri("${rootProject.projectDir}/../local-maven")
-            }
-        }
-        filter {
-            includeGroup 'plus.dragons.createdragonsplus'
-        }
-    }
 }
 
 dependencies {
@@ -221,9 +209,8 @@ dependencies {
 
     // Create Fly embebe Flywheel, Ponder y Catnip, por eso no van por separado.
     api("maven.modrinth:create-fly:${create_fly_version}") { transitive = false }
-    api("plus.dragons.createdragonsplus:${create_dragons_plus_artifact}:${create_dragons_plus_version}") { transitive = false }
 
-    // Solo anotaciones (util.FieldsNullabilityUnknownByDefault de Dragons Plus usa TypeQualifierDefault); no se empaqueta.
+    // Solo anotaciones (javax.annotation); no se empaqueta.
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     compileOnly "maven.modrinth:jei:${jei_version}"
@@ -253,7 +240,6 @@ processResources {
     inputs.property 'version', project.version
     inputs.property 'loader_version', loader_version
     inputs.property 'create_version_range', create_version_range
-    inputs.property 'create_dragons_plus_version_range', create_dragons_plus_version_range
     inputs.property 'minecraft_version_range', minecraft_version_range
     inputs.property 'jei_version', jei_version
 
@@ -271,7 +257,6 @@ processResources {
                 loader_version: loader_version,
                 fabric_api_version: fabric_api_version,
                 create_version_range: create_version_range,
-                create_dragons_plus_version_range: create_dragons_plus_version_range,
                 minecraft_version_range: minecraft_version_range,
                 jei_version: jei_version
         )

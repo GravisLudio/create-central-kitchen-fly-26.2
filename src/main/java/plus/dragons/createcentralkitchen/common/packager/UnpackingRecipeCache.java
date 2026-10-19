@@ -27,7 +27,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
-import plus.dragons.createdragonsplus.common.recipe.UpdateRecipesEvent;
 
 public final class UnpackingRecipeCache {
     private static final Cache<RecipeManager, Map<RecipeType<?>, List<RecipeUnpacking.Candidate>>> RECIPES = CacheBuilder.newBuilder().weakKeys().build();
@@ -35,11 +34,11 @@ public final class UnpackingRecipeCache {
     private UnpackingRecipeCache() {}
 
     /**
-     * Drops the cache whenever recipes or tags change. {@link UpdateRecipesEvent} fires on the logical
-     * server after a data-pack reload, once static tags have been rebound.
+     * Drops the cache whenever recipes or tags change: after a data-pack reload (Fabric fires the event once the new
+     * recipes and tags are in place) and when a server stops.
      */
     public static void register() {
-        UpdateRecipesEvent.EVENT.register(event -> RECIPES.invalidateAll());
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> RECIPES.invalidateAll());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> RECIPES.invalidateAll());
     }
 

@@ -20,13 +20,11 @@ package plus.dragons.createcentralkitchen.config;
 
 import com.zurrtum.create.catnip.config.Builder;
 import plus.dragons.createcentralkitchen.common.CCKCommon;
-import plus.dragons.createdragonsplus.util.FieldsNullabilityUnknownByDefault;
 
 /**
  * Configuration lives in {@code config/create_central_kitchen/common.json} and {@code client.json}
  * (Create-Fly's JSON config; the NeoForge TOML files are not read).
  */
-@FieldsNullabilityUnknownByDefault
 public final class CCKConfig {
     private static volatile CCKCommonConfig common;
     private static volatile CCKClientConfig client;
