@@ -11,6 +11,8 @@ import com.zurrtum.create.content.processing.burner.BlazeBurnerBlockEntity;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +65,9 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
     private static final Identifier SKILLET = Identifier.fromNamespaceAndPath("farmersdelight", "skillet");
     private static final Identifier CUTTING_BOARD = Identifier.fromNamespaceAndPath("farmersdelight", "cutting_board");
     private static final Identifier IRON_KNIFE = Identifier.fromNamespaceAndPath("farmersdelight", "iron_knife");
+    private static final Identifier APPLE_PIE = Identifier.fromNamespaceAndPath("farmersdelight", "apple_pie");
+    /** Items whose Ponder scenes Central Kitchen adds: they are compiled, and opened on screen. */
+    private static final List<Identifier> PONDER_ITEMS = List.of(COOKING_POT, SKILLET, CUTTING_BOARD, APPLE_PIE);
 
     /**
      * Recording mode (environment variable {@code CCK_TEST_RECORD}, set by {@code probar-cliente.ps1 -Grabacion}): the HUD
@@ -109,6 +114,8 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
             // Flywheel only picks its backend when a level is loaded: asking at the title screen says "simple" always.
             log("backend of Create's renderer inside the world: " + flywheelBackend());
             log("recording mode: " + RECORD);
+            if (RECORD)
+                step("wait for the go", () -> waitForGo(context, server));
 
             step("blaze burners", () -> burners(context, server));
             step("deployers", () -> deployers(context, server));
@@ -119,6 +126,7 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
         context.waitTicks(40);
         step("leave the world", () -> expect(context.computeOnClient(mc -> mc.level == null && mc.player == null),
                 "the client still has a world after closing it"));
+        step("game log has no data errors", this::checkGameLog);
 
         if (failures.isEmpty()) {
             log("ALL OK");
@@ -133,7 +141,7 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
     // Blaze burners: chef hat and raised head
     // ------------------------------------------------------------------------------------------------------------
 
-    private void burners(ClientGameTestContext context, TestServerContext server) throws Exception {
+    private static void placeBurners(TestServerContext server) throws Exception {
         server.runOnServer(s -> {
             ServerLevel level = s.overworld();
             BlockState burner = AllBlocks.BLAZE_BURNER.defaultBlockState()
@@ -148,6 +156,35 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
             level.setBlockAndUpdate(new BlockPos(4, 202, BURNER_Z), Blocks.STONE.defaultBlockState());
         });
         feedBurners(server);
+    }
+
+    /**
+     * Recording mode: with the kitchen already built and the camera on the burner row, wait until {@code iniciar.txt}
+     * shows up in the run folder ({@code probar-cliente.ps1 -Iniciar} creates it), so the capture software can be linked
+     * to the Minecraft window and started first. Then a title card, and the test goes on. Gives up after 30 minutes.
+     */
+    private void waitForGo(ClientGameTestContext context, TestServerContext server) throws Exception {
+        Path go = Path.of("iniciar.txt").toAbsolutePath();
+        Files.deleteIfExists(go);
+        placeBurners(server);
+        look(server, 0.5, 203.0, 7.0, 0.5, 202.0, BURNER_Z + 0.5);
+        log("READY: waiting for " + go + " (up to 30 minutes)");
+        for (int second = 0; second < 30 * 60 && !Files.exists(go); second++) {
+            if (second % 30 == 29)
+                feedBurners(server);   // a coal lasts 80 s
+            context.waitTicks(20);
+        }
+        Files.deleteIfExists(go);
+        log("GO: recording starts now");
+        feedBurners(server);
+        server.runCommand("title @a times 5 60 15");
+        server.runCommand("title @a subtitle \"Port a Fabric 26.2 con Create Fly\"");
+        server.runCommand("title @a title \"CENTRAL KITCHEN\"");
+        context.waitTicks(90);
+    }
+
+    private void burners(ClientGameTestContext context, TestServerContext server) throws Exception {
+        placeBurners(server);
         // Give the client time to receive the block entities, tick them once and (with Flywheel) build the visuals.
         context.waitTicks(60);
 
@@ -366,7 +403,7 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
     // ------------------------------------------------------------------------------------------------------------
 
     private void ponder(ClientGameTestContext context, TestServerContext server) throws Exception {
-        for (Identifier id : List.of(COOKING_POT, SKILLET, CUTTING_BOARD)) {
+        for (Identifier id : PONDER_ITEMS) {
             step("Ponder scenes of " + id, () -> {
                 expect(context.computeOnClient(mc -> PonderIndex.getSceneAccess().doScenesExistForId(id)), "no Ponder scenes registered for " + id);
                 int scenes = context.computeOnClient(mc -> PonderIndex.getSceneAccess().compile(id).size());
@@ -374,7 +411,7 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
                 expect(scenes > 0, "no Ponder scene of " + id + " compiled");
             });
         }
-        for (Identifier id : List.of(COOKING_POT, SKILLET, CUTTING_BOARD)) {
+        for (Identifier id : PONDER_ITEMS) {
             step("Ponder screen of " + id, () -> {
                 ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.getValue(id));
                 context.setScreen(() -> PonderUI.of(stack));
@@ -394,6 +431,28 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
     // ------------------------------------------------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------------------------------------------------
+
+    /**
+     * The game does not fail when a data file is in an old format: it logs a warning and uses defaults (an arm that loses
+     * its interaction points, an empty vault). The checks above cannot see that, so read the game's own log. First real run
+     * (2026-10-19) logged exactly this for the Ponder structures: "Unknown element name:DEPOSIT", "Serialization errors".
+     */
+    private void checkGameLog() throws IOException {
+        Path gameLog = Path.of("logs", "latest.log");
+        if (!Files.exists(gameLog)) {
+            log("no game log to check at " + gameLog.toAbsolutePath());
+            return;
+        }
+        int bad = 0;
+        for (String line : new String(Files.readAllBytes(gameLog), StandardCharsets.UTF_8).split("\\R")) {
+            if (line.contains("Serialization errors") || line.contains("Failed to decode value")
+                    || line.contains("Unknown element name") || line.contains("Missing texture references in model create_central_kitchen")) {
+                if (++bad <= 6)
+                    log("game log: " + line.strip());
+            }
+        }
+        expect(bad == 0, bad + " line(s) in the game log about data that did not load (see the [CCK-TEST] game log lines above)");
+    }
 
     /** Takes a screenshot; in recording mode first shows the caption (kept alive) for a few seconds. */
     private static Path shot(ClientGameTestContext context, TestServerContext server, String name, String caption) {
