@@ -2,15 +2,18 @@
   "schemaVersion": 1,
   "id": "create_central_kitchen",
   "version": "${version}",
-  "name": "Create: Central Kitchen",
-  "description": "Integrated cooking automation for Create",
+  "name": "Create: Central Kitchen (Fly Port)",
+  "description": "Integrated cooking automation for Create. Unofficial Fabric 26.2 port of Create: Central Kitchen by DragonsPlus, for Create Fly.",
   "authors": [
     "DragonsPlus"
   ],
+  "contributors": [
+    "GravisLudio (Fabric 26.2 port)"
+  ],
   "contact": {
-    "homepage": "https://modrinth.com/mod/create-central-kitchen",
-    "sources": "https://github.com/DragonsPlusMinecraft/CreateCentralKitchen",
-    "issues": "https://github.com/DragonsPlusMinecraft/CreateCentralKitchen/issues"
+    "homepage": "https://modrinth.com/mod/create-central-kitchen-fly-port",
+    "sources": "https://github.com/GravisLudio/create-central-kitchen-fly-26.2",
+    "issues": "https://github.com/GravisLudio/create-central-kitchen-fly-26.2/issues"
   },
   "license": "LGPL-3.0-or-later",
   "icon": "icon.png",
