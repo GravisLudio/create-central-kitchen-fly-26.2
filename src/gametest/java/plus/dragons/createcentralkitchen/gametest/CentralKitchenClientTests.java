@@ -39,6 +39,7 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
+import org.lwjgl.glfw.GLFW;
 import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerClientExtension;
 import plus.dragons.createcentralkitchen.client.burner.BlazeBurnerRenderOverride;
 import plus.dragons.createcentralkitchen.client.deployer.HandheldDeployerItemRenderState;
@@ -73,8 +74,15 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
      * Recording mode (environment variable {@code CCK_TEST_RECORD}, set by {@code probar-cliente.ps1 -Grabacion}): the HUD
      * stays on so the captions show, and each key shot is held for a few seconds with a caption saying what is checked.
      */
-    private static final boolean RECORD = System.getenv("CCK_TEST_RECORD") != null;
+    private static final boolean SHORT = System.getenv("CCK_TEST_SHORT") != null;
+    private static final boolean RECORD = SHORT || System.getenv("CCK_TEST_RECORD") != null;
     private static final int HOLD_TICKS = 80;
+    /**
+     * Short mode ({@code probar-cliente.ps1 -Corto}, environment variable {@code CCK_TEST_SHORT}, implies recording mode):
+     * a vertical 9:16 window of a fixed size (default 608x1080, {@code CCK_TEST_SIZE=WxH}) and a ~35 s route made for a
+     * short video instead of the full checks: a burner with and without a pot seen from the side, deployers, JEI, Ponder.
+     */
+    private static final int[] WINDOW = windowSize();
 
     private final List<String> failures = new ArrayList<>();
 
@@ -98,7 +106,7 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
             TestServerContext server = singleplayer.getServer();
             context.waitTicks(40);
-            context.getInput().resizeWindow(1280, 760);
+            setUpWindow(context);
             server.runCommand("gamerule send_command_feedback false");   // no chat lines over the picture
             context.runOnClient(mc -> {
                 if (!RECORD && !mc.gui.hud.isHidden())
@@ -117,10 +125,14 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
             if (RECORD)
                 step("wait for the go", () -> waitForGo(context, server));
 
-            step("blaze burners", () -> burners(context, server));
-            step("deployers", () -> deployers(context, server));
-            step("JEI", () -> jei(context, server));
-            step("Ponder", () -> ponder(context, server));
+            if (SHORT) {
+                step("short route", () -> shortRoute(context, server));
+            } else {
+                step("blaze burners", () -> burners(context, server));
+                step("deployers", () -> deployers(context, server));
+                step("JEI", () -> jei(context, server));
+                step("Ponder", () -> ponder(context, server));
+            }
         }   // <- closes the world: the client goes back to the title screen with all the mod's client state alive
 
         context.waitTicks(40);
@@ -166,8 +178,13 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
     private void waitForGo(ClientGameTestContext context, TestServerContext server) throws Exception {
         Path go = Path.of("iniciar.txt").toAbsolutePath();
         Files.deleteIfExists(go);
-        placeBurners(server);
-        look(server, 0.5, 203.0, 7.0, 0.5, 202.0, BURNER_Z + 0.5);
+        if (SHORT) {
+            placeLoneBurner(server);
+            lookAtLoneBurner(server);
+        } else {
+            placeBurners(server);
+            look(server, 0.5, 203.0, 7.0, 0.5, 202.0, BURNER_Z + 0.5);
+        }
         log("READY: waiting for " + go + " (up to 30 minutes)");
         for (int second = 0; second < 30 * 60 && !Files.exists(go); second++) {
             if (second % 30 == 29)
@@ -177,10 +194,157 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
         Files.deleteIfExists(go);
         log("GO: recording starts now");
         feedBurners(server);
+        if (SHORT) {
+            // Narrow window: the big title is 24 px per letter at GUI scale 2, so it is split over title and subtitle.
+            server.runCommand("title @a times 5 40 10");
+            server.runCommand("title @a subtitle \"KITCHEN llega a 26.2\"");
+            server.runCommand("title @a title \"CENTRAL\"");
+            context.waitTicks(55);
+            return;
+        }
         server.runCommand("title @a times 5 60 15");
         server.runCommand("title @a subtitle \"Port a Fabric 26.2 con Create Fly\"");
         server.runCommand("title @a title \"CENTRAL KITCHEN\"");
         context.waitTicks(90);
+    }
+
+    // ------------------------------------------------------------------------------------------------------------
+    // Short mode: a ~35 s route in a vertical window, made for a short video
+    // ------------------------------------------------------------------------------------------------------------
+
+    private static int[] windowSize() {
+        String size = System.getenv("CCK_TEST_SIZE");
+        if (size != null && size.matches("\\d+x\\d+")) {
+            String[] parts = size.split("x");
+            return new int[] { Integer.parseInt(parts[0]), Integer.parseInt(parts[1]) };
+        }
+        return SHORT ? new int[] { 608, 1080 } : new int[] { 1280, 760 };
+    }
+
+    /**
+     * Fabric's resizeWindow only changes the size the game thinks it has, not the operating system's window (the first
+     * recording showed a huge window that the capture software cut to its corner). In short mode the real window is
+     * restored from maximized, resized, moved on screen, and the GUI scale is fixed so captions and JEI fit.
+     */
+    private static void setUpWindow(ClientGameTestContext context) {
+        context.getInput().resizeWindow(WINDOW[0], WINDOW[1]);
+        if (!SHORT)
+            return;
+        context.runOnClient(mc -> {
+            long handle = mc.getWindow().handle();
+            GLFW.glfwRestoreWindow(handle);
+            GLFW.glfwSetWindowSize(handle, WINDOW[0], WINDOW[1]);
+            GLFW.glfwSetWindowPos(handle, 80, 30);
+            mc.options.guiScale().set(2);
+            mc.resizeGui();
+        });
+        context.waitTicks(20);
+        log("window now " + context.computeOnClient(mc -> mc.getWindow().getWidth() + "x" + mc.getWindow().getHeight()
+                + " (screen " + mc.getWindow().getScreenWidth() + "x" + mc.getWindow().getScreenHeight()
+                + ", GUI scale " + mc.getWindow().getGuiScale() + ")"));
+    }
+
+    private static void placeLoneBurner(TestServerContext server) throws Exception {
+        server.runOnServer(s -> s.overworld().setBlockAndUpdate(new BlockPos(0, 201, BURNER_Z),
+                AllBlocks.BLAZE_BURNER.defaultBlockState()
+                        .setValue(BlazeBurnerBlock.HEAT_LEVEL, HeatLevel.KINDLED)
+                        .setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH)));
+        feedBurners(server);
+    }
+
+    /** Side-on at the height of the blaze's head, a little over two blocks away; the pot and its steam fit above. */
+    private static void lookAtLoneBurner(TestServerContext server) {
+        look(server, 0.5, 202.0, BURNER_Z + 2.8, 0.5, 202.0, BURNER_Z + 0.5);
+    }
+
+    private void shortRoute(ClientGameTestContext context, TestServerContext server) throws Exception {
+        // 1) The same burner: alone, then with a pot, then with a skillet.
+        lookAtLoneBurner(server);
+        caption(server, "Un blaze burner de Create");
+        context.waitTicks(50);
+        snap(context, "short-1-burner-alone");
+        setBlockAbove(server, COOKING_POT);
+        caption(server, "Le pones una olla encima...");
+        context.waitTicks(30);
+        feedBurners(server);
+        caption(server, "...y sube la cabeza con sombrero de chef");
+        context.waitTicks(45);
+        snap(context, "short-2-burner-pot");
+        setBlockAbove(server, SKILLET);
+        caption(server, "Con una sartén pasa igual");
+        context.waitTicks(55);
+        snap(context, "short-3-burner-skillet");
+
+        // 2) Two deployers, one over the other, side-on: punch mode on top, use mode below (tilted tool).
+        BlockPos use = new BlockPos(0, 201, DEPLOYER_Z), punch = new BlockPos(0, 203, DEPLOYER_Z);
+        server.runOnServer(s -> {
+            for (BlockPos pos : List.of(use, punch))
+                s.overworld().setBlockAndUpdate(pos, AllBlocks.DEPLOYER.defaultBlockState()
+                        .setValue(BlockStateProperties.FACING, Direction.EAST));
+        });
+        context.waitTicks(20);
+        server.runOnServer(s -> {
+            giveDeployer(s.overworld(), use, DeployerBlockEntity.Mode.USE);
+            giveDeployer(s.overworld(), punch, DeployerBlockEntity.Mode.PUNCH);
+        });
+        look(server, 1.2, 202.5, DEPLOYER_Z + 4.5, 1.2, 202.5, DEPLOYER_Z + 0.5);
+        context.waitTicks(40);
+        caption(server, "Deployer: arriba golpe, abajo uso");
+        context.waitTicks(45);
+        caption(server, "En uso, el pico va inclinado");
+        context.waitTicks(45);
+        snap(context, "short-4-deployers");
+
+        // 3) JEI: the two new categories.
+        context.waitFor(mc -> ClientTestJeiPlugin.runtime != null, 1200);
+        IJeiRuntime runtime = ClientTestJeiPlugin.runtime;
+        context.runOnClient(mc -> runtime.getRecipesGui().showTypes(List.<IRecipeType<?>>of(FDJeiExtension.SAWING)));
+        context.waitTicks(15);
+        caption(server, "JEI: la sierra corta lo de la tabla");
+        context.waitTicks(45);
+        snap(context, "short-5-jei-sawing");
+        context.runOnClient(mc -> runtime.getRecipesGui().showTypes(List.<IRecipeType<?>>of(FDJeiExtension.DEPLOYING)));
+        context.waitTicks(10);
+        caption(server, "Y el deployer con cuchillo, también");
+        context.waitTicks(45);
+        snap(context, "short-6-jei-deploying");
+        context.setScreen(() -> null);
+        context.waitTicks(5);
+
+        // 4) Ponder: the pot's scene, then the skillet's.
+        ponderFor(context, server, COOKING_POT, 125, "Ponder: la olla con brazo y empaquetador", "short-7-ponder-pot");
+        ponderFor(context, server, SKILLET, 100, "Y la sartén con el fogón", "short-8-ponder-skillet");
+    }
+
+    private static void setBlockAbove(TestServerContext server, Identifier blockId) throws Exception {
+        server.runOnServer(s -> s.overworld().setBlockAndUpdate(new BlockPos(0, 202, BURNER_Z), block(blockId).defaultBlockState()));
+    }
+
+    private static void giveDeployer(ServerLevel level, BlockPos pos, DeployerBlockEntity.Mode mode) {
+        if (!(level.getBlockEntity(pos) instanceof DeployerBlockEntity be))
+            throw new IllegalStateException("no deployer at " + pos);
+        ItemStack pickaxe = new ItemStack(Items.IRON_PICKAXE);
+        be.mode = mode;
+        be.heldItem = pickaxe.copy();
+        if (be.getPlayer() != null)
+            be.getPlayer().cast().setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, pickaxe.copy());
+        be.setChanged();
+        be.sendData();
+    }
+
+    private void ponderFor(ClientGameTestContext context, TestServerContext server, Identifier id, int ticks, String caption, String shotName) {
+        ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.getValue(id));
+        context.setScreen(() -> PonderUI.of(stack));
+        context.waitTicks(20);
+        caption(server, caption);
+        context.waitTicks(ticks);
+        snap(context, shotName);
+        context.setScreen(() -> null);
+        context.waitTicks(5);
+    }
+
+    private static void snap(ClientGameTestContext context, String name) {
+        context.takeScreenshot(name);
     }
 
     private void burners(ClientGameTestContext context, TestServerContext server) throws Exception {
