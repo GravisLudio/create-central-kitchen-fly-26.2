@@ -15,6 +15,7 @@ It is not made, endorsed or supported by the original authors.
 
 - NeoForge APIs replaced with Fabric 26.2 and Create Fly ones (`com.zurrtum.create`): registries, config, packager unpacking on `Container`s, mechanical arm points, belt rule, mixins.
 - Farmer's Delight integration ported to Farmer's Delight Refabricated 26.2: cooking pot, skillet, stove, cutting board, feasts and pies, Cutting Board recipes as sawing and deploying recipes.
+- Rustic Delight integration (2.6.2-p2): mechanical arms take pancakes from, and add them to, every flavored stack, with a Ponder scene. Needs Rustic Delight for Fabric 26.2 (MIT, by PhantomWing).
 - Client side ported: chef hat and raised head on blaze burners under Farmer's Delight cooking blocks, tilted tools in a deployer in use mode, two JEI categories, Ponder scenes (their structure files migrated to the 26.2 data format).
 - No longer needs Create: Dragons Plus.
-- **Not ported (yet):** the integrations for mods that do not exist for Minecraft 26.x (Brewin' and Chewin', Extra Delight, Miner's Delight, Cultural Delights, Festive Delight, Hearth and Harvest, End's Delight, My Nether's Delight, Dungeon's Delight, Rustic Delight), Dragons Plus's grouped Ponder cards, and the Multiblock Keg and Multiblock Oven that the original lists as future plans.
+- **Not ported (yet):** the integrations for mods that do not exist for Minecraft 26.x (Brewin' and Chewin', Extra Delight, Miner's Delight, Cultural Delights, Festive Delight, Hearth and Harvest, End's Delight, My Nether's Delight, Dungeon's Delight), Dragons Plus's grouped Ponder cards, and the Multiblock Keg and Multiblock Oven that the original lists as future plans.

@@ -7,7 +7,8 @@
   "entrypoints": {
     "fabric-gametest": [
       "plus.dragons.createcentralkitchen.gametest.CoreTests",
-      "plus.dragons.createcentralkitchen.gametest.FarmersDelightTests"
+      "plus.dragons.createcentralkitchen.gametest.FarmersDelightTests",
+      "plus.dragons.createcentralkitchen.gametest.RusticDelightTests"
     ],
     "fabric-client-gametest": [
       "plus.dragons.createcentralkitchen.gametest.CentralKitchenClientTests"

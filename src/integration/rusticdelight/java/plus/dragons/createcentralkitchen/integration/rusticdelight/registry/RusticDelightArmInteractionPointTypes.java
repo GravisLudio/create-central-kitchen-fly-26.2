@@ -18,17 +18,14 @@
 
 package plus.dragons.createcentralkitchen.integration.rusticdelight.registry;
 
-import static plus.dragons.createcentralkitchen.common.registry.CCKArmInteractionPointTypes.holder;
-
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
-import net.neoforged.neoforge.registries.DeferredHolder;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
 import plus.dragons.createcentralkitchen.common.registry.CCKArmInteractionPointTypes;
 import plus.dragons.createcentralkitchen.integration.rusticdelight.mechanicalArm.PancakeArmInteractionPoint;
 
 public class RusticDelightArmInteractionPointTypes {
-    public static final DeferredHolder<ArmInteractionPointType, ArmInteractionPointType> PANCAKE = holder("pancake");
+    public static ArmInteractionPointType PANCAKE;
 
     public static void register() {
-        CCKArmInteractionPointTypes.register(PANCAKE, PancakeArmInteractionPoint.Type::new);
+        PANCAKE = CCKArmInteractionPointTypes.register("pancake", new PancakeArmInteractionPoint.Type());
     }
 }

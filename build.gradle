@@ -62,7 +62,9 @@ def notPortedYet = [
         'plus/dragons/createcentralkitchen/common/gametest/**',       // GameTests de NeoForge
         'plus/dragons/createcentralkitchen/mixin/UniversalConditionalMixinPlugin.java', // sustituido por ModLoadedMixinPlugin
         // Integracion de Farmer's Delight
-        'plus/dragons/createcentralkitchen/integration/farmersdelight/FarmersDelightRecipeGameTests.java' // GameTests de NeoForge
+        'plus/dragons/createcentralkitchen/integration/farmersdelight/FarmersDelightRecipeGameTests.java', // GameTests de NeoForge
+        // Integracion de Rustic Delight
+        'plus/dragons/createcentralkitchen/integration/rusticdelight/RusticDelightGameTests.java' // GameTests de NeoForge
 ]
 
 sourceSets {
@@ -224,6 +226,14 @@ dependencies {
         gametestCompileOnly("maven.modrinth:farmers-delight-refabricated:${farmers_delight_version}") { transitive = false }
         gametestCompileOnly fabricApi.module("fabric-menu-api-v1", fabric_api_version)
         runtimeOnly("maven.modrinth:farmers-delight-refabricated:${farmers_delight_version}") { transitive = false }
+    }
+
+    if (hasIntegration("rusticdelight")) {
+        rusticdelightCompileOnly("maven.modrinth:rustic-delight:${rustic_delight_version}") { transitive = false }
+        gametestCompileOnly("maven.modrinth:rustic-delight:${rustic_delight_version}") { transitive = false }
+        runtimeOnly("maven.modrinth:rustic-delight:${rustic_delight_version}") { transitive = false }
+        // Rustic Delight declara cloth-config como dependencia obligatoria: sin el no arranca en el servidor de pruebas.
+        runtimeOnly("maven.modrinth:cloth-config:${cloth_config_version}") { transitive = false }
     }
 
     // No forma parte del bundle fabric-api: es un modulo solo de desarrollo.

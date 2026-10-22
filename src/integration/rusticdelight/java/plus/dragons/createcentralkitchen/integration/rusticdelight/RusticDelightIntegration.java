@@ -18,38 +18,16 @@
 
 package plus.dragons.createcentralkitchen.integration.rusticdelight;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
-import net.neoforged.fml.loading.FMLLoader;
-import plus.dragons.createcentralkitchen.common.CCKCommon;
-import plus.dragons.createcentralkitchen.integration.ModIntegration;
-import plus.dragons.createcentralkitchen.integration.rusticdelight.ponder.RusticDelightPonderPlugin;
 import plus.dragons.createcentralkitchen.integration.rusticdelight.registry.RusticDelightArmInteractionPointTypes;
 
-@Mod(CCKCommon.ID)
-public class RusticDelightIntegration {
-    public RusticDelightIntegration(IEventBus modBus) {
-        if (ModIntegration.RUSTICDELIGHT.enabled()) {
-            modBus.register(new Common());
-            if (FMLLoader.getDist() == Dist.CLIENT)
-                modBus.register(new Client());
-        }
-    }
+/**
+ * Entry point of the Rustic Delight integration. {@code CCKCommon} calls {@link #init()} only when Rustic Delight is
+ * loaded, so nothing here is touched without it.
+ */
+public final class RusticDelightIntegration {
+    private RusticDelightIntegration() {}
 
-    public static class Common {
-        @SubscribeEvent
-        public void construct(final FMLConstructModEvent event) {
-            RusticDelightArmInteractionPointTypes.register();
-        }
-    }
-
-    public static class Client {
-        @SubscribeEvent
-        public void construct(final FMLConstructModEvent event) {
-            RusticDelightPonderPlugin.register();
-        }
+    public static void init() {
+        RusticDelightArmInteractionPointTypes.register();
     }
 }

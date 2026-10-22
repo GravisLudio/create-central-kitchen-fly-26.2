@@ -38,7 +38,8 @@ public class CCKCommon implements ModInitializer {
      * mod's classes, so they are started by name, and only when that mod is loaded.
      */
     private static final Map<ModIntegration, String> INTEGRATIONS = Map.of(
-            ModIntegration.FARMERSDELIGHT, "plus.dragons.createcentralkitchen.integration.farmersdelight.FDIntegration");
+            ModIntegration.FARMERSDELIGHT, "plus.dragons.createcentralkitchen.integration.farmersdelight.FDIntegration",
+            ModIntegration.RUSTICDELIGHT, "plus.dragons.createcentralkitchen.integration.rusticdelight.RusticDelightIntegration");
 
     @Override
     public void onInitialize() {

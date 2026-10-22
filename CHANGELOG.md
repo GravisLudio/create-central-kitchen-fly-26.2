@@ -1,3 +1,9 @@
+## Create: Central Kitchen (Fly Port) 2.6.2-p2 for Minecraft 26.2 (unreleased)
+
+### Added / ported
+
+* Rustic Delight integration: mechanical arms take pancakes from every flavored stack and add matching pancakes to it (up to twelve), with a Ponder scene. Only active when Rustic Delight is installed.
+
 ## Create: Central Kitchen (Fly Port) 2.6.2-p1 for Minecraft 26.2
 
 First Fabric release. Port of Create: Central Kitchen 2.6.2b (NeoForge 1.21.1) to Minecraft 26.2 on Create Fly.

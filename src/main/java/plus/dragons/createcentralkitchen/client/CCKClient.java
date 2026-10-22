@@ -30,7 +30,8 @@ import plus.dragons.createcentralkitchen.integration.ModIntegration;
 public class CCKClient implements ClientModInitializer {
     /** Client entry class of each ported integration, started by name and only when its mod is loaded. */
     private static final Map<ModIntegration, String> INTEGRATIONS = Map.of(
-            ModIntegration.FARMERSDELIGHT, "plus.dragons.createcentralkitchen.integration.farmersdelight.FDIntegrationClient");
+            ModIntegration.FARMERSDELIGHT, "plus.dragons.createcentralkitchen.integration.farmersdelight.FDIntegrationClient",
+            ModIntegration.RUSTICDELIGHT, "plus.dragons.createcentralkitchen.integration.rusticdelight.RusticDelightIntegrationClient");
 
     @Override
     public void onInitializeClient() {

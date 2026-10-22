@@ -19,8 +19,8 @@
 package plus.dragons.createcentralkitchen.integration.rusticdelight.mechanicalArm;
 
 import com.phantomwing.rusticdelight.block.custom.PancakeBlock;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
-import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
+import com.zurrtum.create.content.kinetics.mechanicalArm.ArmInteractionPointType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ItemStack;

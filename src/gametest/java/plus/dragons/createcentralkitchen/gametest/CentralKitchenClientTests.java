@@ -68,7 +68,15 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
     private static final Identifier IRON_KNIFE = Identifier.fromNamespaceAndPath("farmersdelight", "iron_knife");
     private static final Identifier APPLE_PIE = Identifier.fromNamespaceAndPath("farmersdelight", "apple_pie");
     /** Items whose Ponder scenes Central Kitchen adds: they are compiled, and opened on screen. */
-    private static final List<Identifier> PONDER_ITEMS = List.of(COOKING_POT, SKILLET, CUTTING_BOARD, APPLE_PIE);
+    private static final List<Identifier> PONDER_ITEMS = ponderItems();
+
+    /** The pancake scene of the Rustic Delight integration joins the list when that mod is in the run. */
+    private static List<Identifier> ponderItems() {
+        var items = new ArrayList<>(List.of(COOKING_POT, SKILLET, CUTTING_BOARD, APPLE_PIE));
+        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("rusticdelight"))
+            items.add(Identifier.fromNamespaceAndPath("rusticdelight", "pancakes"));
+        return items;
+    }
 
     /**
      * Recording mode (environment variable {@code CCK_TEST_RECORD}, set by {@code probar-cliente.ps1 -Grabacion}): the HUD

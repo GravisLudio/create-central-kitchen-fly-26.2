@@ -45,6 +45,7 @@
   },
   "suggests": {
     "jei": "${jei_version}",
-    "farmersdelight": "*"
+    "farmersdelight": "*",
+    "rusticdelight": "*"
   }
 }
