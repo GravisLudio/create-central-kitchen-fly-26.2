@@ -95,14 +95,14 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
     private final List<String> failures = new ArrayList<>();
 
     /** What each blaze burner of the row has above it and what the mod should do about it. */
-    private record BurnerCase(String name, int x, boolean hat, String caption) {}
+    private record BurnerCase(String name, int x, boolean hat, int minHatPixels, String caption) {}
 
     private static final List<BurnerCase> BURNERS = List.of(
-            new BurnerCase("control-nothing-above", -4, false, "Sin nada encima: cabeza baja y sin sombrero"),
-            new BurnerCase("cooking-pot", -2, true, "Bajo una olla de Farmer's Delight: cabeza levantada y sombrero de chef"),
-            new BurnerCase("skillet", 0, true, "Bajo una sartén: también sombrero de chef"),
-            new BurnerCase("chute-then-pot", 2, true, "Con una tolva en medio, el calor pasa y sale el sombrero"),
-            new BurnerCase("stone-above", 4, false, "Bajo una piedra: no cambia nada"));
+            new BurnerCase("control-nothing-above", -4, false, 0, "Sin nada encima: cabeza baja y sin sombrero"),
+            new BurnerCase("cooking-pot", -2, true, 100, "Bajo una olla de Farmer's Delight: cabeza levantada y sombrero de chef"),
+            new BurnerCase("skillet", 0, true, 100, "Bajo una sartén: también sombrero de chef"),
+            new BurnerCase("chute-then-pot", 2, true, 6, "Con una tolva en medio, el calor pasa y sale el sombrero"),
+            new BurnerCase("stone-above", 4, false, 0, "Bajo una piedra: no cambia nada"));
 
     @FunctionalInterface
     private interface Step {
@@ -401,11 +401,15 @@ public class CentralKitchenClientTests implements FabricClientGameTest {
             Path picture = shot(context, server, "burner-" + c.name(), c.caption());
             if (!RECORD) {
                 // The chef hat is light neutral grey (222) and nothing else around a burner is: count those pixels at the
-                // centre of the picture, where the head is. Measured in the first real run: 285-414 with a hat, 0 without.
+                // centre of the picture, where the head is. Measured: first real run 285-414 with a hat; 2026-11-02 (three runs,
+                // with and without Iris) 557-592 under a pot, 373-737 under a skillet and 12-45 behind a chute (the hat IS
+                // drawn there, checked on the screenshot, but the chute hides most of it and the count moves with the
+                // animation, so that case only has to show some hat colour); 0 without a hat in every run.
                 int hatPixels = hatPixels(picture);
                 log("burner " + c.name() + ": " + hatPixels + " pixels of the chef hat's colour");
-                expect(c.hat() ? hatPixels >= 100 : hatPixels <= 5,
-                        "burner " + c.name() + ": " + hatPixels + " hat-coloured pixels, expected " + (c.hat() ? "100 or more" : "none"));
+                expect(c.hat() ? hatPixels >= c.minHatPixels() : hatPixels <= 5,
+                        "burner " + c.name() + ": " + hatPixels + " hat-coloured pixels, expected "
+                                + (c.hat() ? c.minHatPixels() + " or more" : "none"));
             }
         }
         // Same pot seen from the front and from above, as a player would normally see it.
